@@ -10,6 +10,7 @@ const path = require('path'); // Import path module
 
 // Load .env file specifically from the current directory
 dotenv.config({ path: path.resolve(__dirname, '.env') });
+
 // console.log("[DEBUG] Attempted to load .env from:", path.resolve(__dirname, '.env')); // Keep for debugging if needed
 // console.log("[DEBUG] DISCORD_CLIENT_ID after explicit path load:", process.env.DISCORD_CLIENT_ID);
 
@@ -26,6 +27,7 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5173", // Allow frontend to access
   credentials: true
 }));
+
 app.use(express.json()); // To parse JSON request bodies
 
 // Express Session
@@ -320,7 +322,6 @@ app.post('/rooms/:roomId/leave', ensureAuthenticated, (req, res) => {
   res.status(200).json({ message: 'Successfully left room.', room });
 });
 
-
 const server = http.createServer(app); // Use app for HTTP server
 
 server.listen(port, () => {
@@ -345,6 +346,7 @@ console.log("WebSocket server created, waiting for connections...");
 
 wss.on("connection", (ws) => {
   console.log("Client connected to WebSocket");
+  
   // ws.send("Hi there, you are connected to the WebSocket server!"); // Initial generic message can be removed or kept
 
   ws.on("message", (rawMessage) => {
@@ -386,7 +388,7 @@ wss.on("connection", (ws) => {
     } catch (error) {
       console.error("Failed to parse WebSocket message or handle it:", error);
       ws.send(JSON.stringify({ event: 'error', payload: { message: 'Invalid message format.' } }));
-    }
+    }  
   });
 
   ws.on("close", () => {
