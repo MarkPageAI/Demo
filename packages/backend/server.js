@@ -8,6 +8,7 @@ const session = require("express-session");
 const { v4: uuidv4 } = require('uuid'); // Import uuid
 const path = require('path'); // Import path module
 const fs = require('fs'); // Import File System module
+const rateLimit = require('express-rate-limit'); // Import express-rate-limit
 
 // Load .env file specifically from the current directory
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -29,6 +30,8 @@ function getRandomQuestions(sourceArray, count) {
   return shuffled.slice(0, count);
 }
 
+const ROOM_WAITING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes for a room to be started
+// const MIN_PLAYERS_TO_AVOID_TIMEOUT = 1; // Or some other logic for keep-alive
 // console.log("[DEBUG] Attempted to load .env from:", path.resolve(__dirname, '.env')); // Keep for debugging if needed
 // console.log("[DEBUG] DISCORD_CLIENT_ID after explicit path load:", process.env.DISCORD_CLIENT_ID);
 
@@ -51,6 +54,29 @@ app.use(cors({
 }));
 
 app.use(express.json()); // To parse JSON request bodies
+
+// --- Rate Limiting Setup ---
+// Apply to all requests (more general, less strict)
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 200 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: 'Too many requests from this IP, please try again after 15 minutes.',
+});
+app.use(generalLimiter);
+
+// Stricter limiter for sensitive actions like creating rooms or submitting answers
+const actionLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20, // limit each IP to 20 requests per windowMs for these actions
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many actions from this IP, please try again after 5 minutes.',
+});
+
+// Apply actionLimiter specifically to certain routes later if needed, or group them.
+// For now, generalLimiter applies to all. We'll apply actionLimiter to specific routes.
 
 // Express Session
 app.use(session({
@@ -183,10 +209,27 @@ const ensureAuthenticated = (req, res, next) => {
 // --- Room Management Endpoints ---
 
 // POST /rooms - Create a new room
-app.post('/rooms', ensureAuthenticated, (req, res) => {
+app.post('/rooms', actionLimiter, ensureAuthenticated, (req, res) => {
   const hostUser = req.user; // User data from Passport session (Discord profile + gameSessionId)
-  const { name, isPublic = true, maxPlayers = 8 } = req.body;
+  let { name, isPublic = true, maxPlayers = 8 } = req.body;
 
+  // Validation for room creation
+  if (name && (typeof name !== 'string' || name.length > 100)) {
+    return res.status(400).json({ message: 'Room name must be a string and less than 100 characters.' });
+  }
+  if (typeof isPublic !== 'boolean') {
+    isPublic = true; // Default if invalid type
+  }
+  if (maxPlayers !== undefined) {
+    const mp = parseInt(maxPlayers, 10);
+    if (isNaN(mp) || mp < 2 || mp > 20) {
+      return res.status(400).json({ message: 'maxPlayers must be a number between 2 and 20.' });
+    }
+    maxPlayers = mp;
+  } else {
+    maxPlayers = 8; // Default if not provided
+  }
+  
   const roomId = uuidv4();
   const hostPlayer = {
     discordUserId: hostUser.id,
@@ -217,11 +260,20 @@ app.post('/rooms', ensureAuthenticated, (req, res) => {
     quizStartTime: null,
     currentQuestionStartTime: null,
     // gameSettings: {}, // Placeholder for future game settings
-    // questions: [],    // Placeholder for questions
   };
 
   activeRooms[roomId] = newRoom;
-  console.log(`Room created: ${newRoom.name} (ID: ${roomId}), Host: ${hostUser.username}`);
+
+  // Set a timeout to automatically delete the room if it's not started
+  newRoom.waitingTimeoutId = setTimeout(() => {
+    const roomToCheck = activeRooms[roomId];
+    if (roomToCheck && roomToCheck.status === 'waiting') {
+      delete activeRooms[roomId];
+      console.log(`Room ${roomId} ('${roomToCheck.name}') timed out and was deleted due to inactivity.`);
+    }
+  }, ROOM_WAITING_TIMEOUT_MS);
+
+  console.log(`Room created: ${newRoom.name} (ID: ${roomId}), Host: ${hostUser.username}. Timeout set for ${ROOM_WAITING_TIMEOUT_MS / 60000} minutes.`);
   console.log("Current active rooms:", Object.keys(activeRooms).length);
 
   res.status(201).json(newRoom);
@@ -230,6 +282,11 @@ app.post('/rooms', ensureAuthenticated, (req, res) => {
 // GET /rooms/:roomId - Get details of a specific room
 app.get('/rooms/:roomId', (req, res) => {
   const { roomId } = req.params;
+  
+  if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+    return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
+  }
+
   const room = activeRooms[roomId];
 
   if (room) {
@@ -240,8 +297,12 @@ app.get('/rooms/:roomId', (req, res) => {
 });
 
 // POST /rooms/:roomId/join - Join an existing room
-app.post('/rooms/:roomId/join', ensureAuthenticated, (req, res) => {
+app.post('/rooms/:roomId/join', actionLimiter, ensureAuthenticated, (req, res) => {
   const { roomId } = req.params;
+  if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+    return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
+  }
+
   const userJoining = req.user; // User data from Passport session
 
   const room = activeRooms[roomId];
@@ -299,8 +360,12 @@ app.post('/rooms/:roomId/join', ensureAuthenticated, (req, res) => {
 });
 
 // POST /rooms/:roomId/leave - Leave a room
-app.post('/rooms/:roomId/leave', ensureAuthenticated, (req, res) => {
+app.post('/rooms/:roomId/leave', ensureAuthenticated, (req, res) => { // Should also have actionLimiter? For now, no.
   const { roomId } = req.params;
+  if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+    return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
+  }
+
   const userLeaving = req.user; // User data from Passport session
 
   const room = activeRooms[roomId];
@@ -354,8 +419,12 @@ app.post('/rooms/:roomId/leave', ensureAuthenticated, (req, res) => {
 });
 
 // GET /rooms/:roomId/question - Get the current active question for a room
-app.get('/rooms/:roomId/question', ensureAuthenticated, (req, res) => {
+app.get('/rooms/:roomId/question', ensureAuthenticated, (req, res) => { // No actionLimiter needed for GET usually
   const { roomId } = req.params;
+  if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+    return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
+  }
+
   const requestingUser = req.user;
 
   const room = activeRooms[roomId];
@@ -400,13 +469,16 @@ app.get('/rooms/:roomId/question', ensureAuthenticated, (req, res) => {
 });
 
 // POST /rooms/:roomId/answer - Submit an answer for the current question
-app.post('/rooms/:roomId/answer', ensureAuthenticated, (req, res) => {
+app.post('/rooms/:roomId/answer', actionLimiter, ensureAuthenticated, (req, res) => {
   const { roomId } = req.params;
+  if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+    return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
+  }
   const player = req.user; // User object from session
   const { choiceId } = req.body;
 
-  if (!choiceId) {
-    return res.status(400).json({ message: 'Missing choiceId in request body.' });
+  if (!choiceId || typeof choiceId !== 'string' || choiceId.trim() === '') {
+    return res.status(400).json({ message: 'choiceId must be a non-empty string.' });
   }
 
   const room = activeRooms[roomId];
@@ -651,8 +723,11 @@ app.get('/leaderboard', (req, res) => {
 });
 
 // POST /rooms/:roomId/start - Start the quiz in a room (host only)
-app.post('/rooms/:roomId/start', ensureAuthenticated, (req, res) => {
+app.post('/rooms/:roomId/start', actionLimiter, ensureAuthenticated, (req, res) => {
   const { roomId } = req.params;
+  if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
+    return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
+  }
   const requestingUser = req.user;
 
   const room = activeRooms[roomId];
@@ -671,6 +746,13 @@ app.post('/rooms/:roomId/start', ensureAuthenticated, (req, res) => {
 
   if (!room.questions || room.questions.length === 0) {
     return res.status(400).json({ message: 'No questions loaded for this room. Cannot start quiz.' });
+  }
+
+  // Clear the waiting timeout since the game is starting
+  if (room.waitingTimeoutId) {
+    clearTimeout(room.waitingTimeoutId);
+    delete room.waitingTimeoutId;
+    console.log(`Cleared waiting timeout for room ${roomId} as quiz is starting.`);
   }
 
   // Initialize/Reset quiz state for the room
@@ -760,12 +842,21 @@ wss.on("connection", (ws) => {
       const message = JSON.parse(rawMessage);
       console.log("Received WebSocket message:", message);
 
-      if (message.action === 'subscribe_room' && message.payload && message.payload.roomId) {
-        const roomIdToSubscribe = message.payload.roomId;
-        // Check if room exists (optional, but good practice)
-        if (activeRooms[roomIdToSubscribe]) {
-          ws.subscribedRoomId = roomIdToSubscribe; // Tag the WebSocket connection with the roomId
-          console.log(`WebSocket client subscribed to room: ${roomIdToSubscribe}`);
+      if (message.action === 'subscribe_room' && message.payload && message.payload.roomId && message.payload.discordUserId) {
+        const { roomId: roomIdToSubscribe, discordUserId, username: clientUsername } = message.payload;
+
+        const roomExists = activeRooms[roomIdToSubscribe];
+        // Basic validation: does the user (from payload) actually exist in the room's player list?
+        // This is a weak validation if discordUserId can be spoofed by a malicious client.
+        // A stronger validation would involve a token sent via WebSocket, mapped to a server-side session.
+        const playerInRoom = roomExists ? roomExists.players.find(p => p.discordUserId === discordUserId) : null;
+
+        if (roomExists && playerInRoom) {
+          ws.subscribedRoomId = roomIdToSubscribe;
+          ws.discordUserId = discordUserId; // Store discordUserId on the ws connection
+          ws.clientUsername = clientUsername || discordUserId; // Store username for logging
+          console.log(`WebSocket client ${ws.clientUsername} (ID: ${ws.discordUserId}) subscribed to room: ${roomIdToSubscribe}`);
+
           // Send current room state to the newly subscribed client
           ws.send(JSON.stringify({
             event: 'room_updated',
@@ -798,7 +889,56 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    console.log("Client disconnected from WebSocket");
+    const { subscribedRoomId, discordUserId, clientUsername } = ws;
+    console.log(`WebSocket client ${clientUsername || 'Unknown'} (ID: ${discordUserId || 'N/A'}) disconnected.`);
+
+    if (subscribedRoomId && discordUserId) {
+      const room = activeRooms[subscribedRoomId];
+      if (room) {
+        const playerIndex = room.players.findIndex(p => p.discordUserId === discordUserId);
+
+        if (playerIndex !== -1) {
+          const playerLeaving = room.players[playerIndex];
+          room.players.splice(playerIndex, 1);
+          console.log(`Player ${playerLeaving.username} (ID: ${discordUserId}) removed from room ${subscribedRoomId} due to WebSocket disconnect. Players remaining: ${room.players.length}`);
+
+          let roomWasDeleted = false;
+          // Handle host leaving
+          if (playerLeaving.isHost || room.hostId === discordUserId) {
+            if (room.players.length > 0) {
+              room.players[0].isHost = true;
+              room.hostId = room.players[0].discordUserId;
+              console.log(`Host ${playerLeaving.username} left room ${subscribedRoomId} via disconnect. New host is ${room.players[0].username}.`);
+            } else {
+              delete activeRooms[subscribedRoomId];
+              roomWasDeleted = true;
+              console.log(`Room ${subscribedRoomId} was empty after host disconnect and has been deleted.`);
+            }
+          }
+
+          // Broadcast 'room_updated' only if the room still exists
+          if (!roomWasDeleted) {
+            wss.clients.forEach(clientWs => {
+              if (clientWs.readyState === WebSocket.OPEN && clientWs.subscribedRoomId === subscribedRoomId) {
+                try {
+                  clientWs.send(JSON.stringify({
+                    event: 'room_updated',
+                    payload: room
+                  }));
+                } catch (error) {
+                  console.error(`Failed to send room_updated (player disconnected) to client in room ${subscribedRoomId}:`, error);
+                }
+              }
+            });
+            console.log(`Broadcasted room_updated for room ${subscribedRoomId} after player disconnect.`);
+          }
+        } else {
+          console.log(`Player with ID ${discordUserId} not found in room ${subscribedRoomId} upon disconnect, no removal needed.`);
+        }
+      } else {
+        console.log(`Room ${subscribedRoomId} not found in activeRooms upon player disconnect.`);
+      }
+    }
   });
 
   ws.on("error", (error) => {

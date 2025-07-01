@@ -130,10 +130,18 @@ const RoomPage = () => {
     // Subscribe to room events after connection is likely established
     // A small delay or onopen callback in websocketService might be more robust
     const wsSubTimeout = setTimeout(() => {
-        if (websocketService.getSocket() && websocketService.getSocket().readyState === WebSocket.OPEN) {
-            websocketService.sendMessage({ action: 'subscribe_room', payload: { roomId } });
+        if (websocketService.getSocket() && websocketService.getSocket().readyState === WebSocket.OPEN && user) {
+            websocketService.sendMessage({
+              action: 'subscribe_room',
+              payload: {
+                roomId: roomId,
+                // Send user identifiers for backend to associate ws connection with a user
+                discordUserId: user.id, // from AuthContext
+                username: user.username // for logging or if needed by backend immediately
+              }
+            });
         } else {
-            console.warn("WebSocket not open when attempting to subscribe. Subscription might fail or be delayed.");
+            console.warn("WebSocket not open or user not available when attempting to subscribe. Subscription might fail or be delayed.");
             // Could implement a retry or queue for subscription message
         }
     }, 500); // wait a bit for connection
