@@ -32,6 +32,8 @@ function getRandomQuestions(sourceArray, count) {
 
 const ROOM_WAITING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes for a room to be started
 // const MIN_PLAYERS_TO_AVOID_TIMEOUT = 1; // Or some other logic for keep-alive
+// console.log("[DEBUG] Attempted to load .env from:", path.resolve(__dirname, '.env')); // Keep for debugging if needed
+// console.log("[DEBUG] DISCORD_CLIENT_ID after explicit path load:", process.env.DISCORD_CLIENT_ID);
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -50,6 +52,7 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5173", // Allow frontend to access
   credentials: true
 }));
+
 app.use(express.json()); // To parse JSON request bodies
 
 // --- Rate Limiting Setup ---
@@ -226,7 +229,7 @@ app.post('/rooms', actionLimiter, ensureAuthenticated, (req, res) => {
   } else {
     maxPlayers = 8; // Default if not provided
   }
-
+  
   const roomId = uuidv4();
   const hostPlayer = {
     discordUserId: hostUser.id,
@@ -279,9 +282,11 @@ app.post('/rooms', actionLimiter, ensureAuthenticated, (req, res) => {
 // GET /rooms/:roomId - Get details of a specific room
 app.get('/rooms/:roomId', (req, res) => {
   const { roomId } = req.params;
+  
   if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
     return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
   }
+
   const room = activeRooms[roomId];
 
   if (room) {
@@ -297,6 +302,7 @@ app.post('/rooms/:roomId/join', actionLimiter, ensureAuthenticated, (req, res) =
   if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
     return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
   }
+
   const userJoining = req.user; // User data from Passport session
 
   const room = activeRooms[roomId];
@@ -359,6 +365,7 @@ app.post('/rooms/:roomId/leave', ensureAuthenticated, (req, res) => { // Should 
   if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
     return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
   }
+
   const userLeaving = req.user; // User data from Passport session
 
   const room = activeRooms[roomId];
@@ -417,6 +424,7 @@ app.get('/rooms/:roomId/question', ensureAuthenticated, (req, res) => { // No ac
   if (!roomId || typeof roomId !== 'string' || roomId.trim() === '') {
     return res.status(400).json({ message: 'A valid Room ID must be provided in the URL path.' });
   }
+
   const requestingUser = req.user;
 
   const room = activeRooms[roomId];
@@ -714,7 +722,6 @@ app.get('/leaderboard', (req, res) => {
   res.status(200).json(limitedLeaderboard);
 });
 
-
 // POST /rooms/:roomId/start - Start the quiz in a room (host only)
 app.post('/rooms/:roomId/start', actionLimiter, ensureAuthenticated, (req, res) => {
   const { roomId } = req.params;
@@ -803,7 +810,6 @@ app.post('/rooms/:roomId/start', actionLimiter, ensureAuthenticated, (req, res) 
   res.status(200).json({ message: 'Quiz started successfully.', question: newQuestionPayload });
 });
 
-
 const server = http.createServer(app); // Use app for HTTP server
 
 server.listen(port, () => {
@@ -828,6 +834,7 @@ console.log("WebSocket server created, waiting for connections...");
 
 wss.on("connection", (ws) => {
   console.log("Client connected to WebSocket");
+  
   // ws.send("Hi there, you are connected to the WebSocket server!"); // Initial generic message can be removed or kept
 
   ws.on("message", (rawMessage) => {
