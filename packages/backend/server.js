@@ -36,9 +36,13 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // --- In-memory store for active rooms ---
-// In a production app, this would be a database (e.g., Redis, PostgreSQL)
 const activeRooms = {};
-global.activeRooms = activeRooms; // Make it globally accessible for now if needed by other modules (e.g. WebSocket handler if separated)
+global.activeRooms = activeRooms; // Make it globally accessible if needed
+
+// --- In-memory store for Global Leaderboard ---
+const globalLeaderboard = {}; // Key: discordUserId, Value: LeaderboardEntry
+global.globalLeaderboard = globalLeaderboard; // Make it globally accessible if needed
+
 
 // Middleware
 app.use(cors({
@@ -203,7 +207,6 @@ app.post('/rooms', ensureAuthenticated, (req, res) => {
     maxPlayers: parseInt(maxPlayers, 10) || 8,
     hostId: hostUser.id,
     createdAt: Date.now(),
-    
     // Quiz related properties
     questions: getRandomQuestions(allQuestions, 5), // Load 5 random questions for the room
     currentQuestionIndex: -1, // -1 indicates quiz hasn't started
@@ -583,9 +586,68 @@ const proceedToNextStep = (roomId) => {
     // delete room.playerAnswers;
     // delete room.currentQuestionStartTime;
     // delete room.currentQuestionIndex; // Or set to -1
+
+    // --- Update Global Leaderboard ---
+    console.log(`[GlobalLeaderboard] Updating global leaderboard after quiz in room ${roomId}`);
+    room.players.forEach(playerInRoom => {
+      const { discordUserId, username, discriminator, avatar, score } = playerInRoom;
+      if (globalLeaderboard[discordUserId]) {
+        globalLeaderboard[discordUserId].totalScore += score;
+        globalLeaderboard[discordUserId].gamesPlayed++;
+        globalLeaderboard[discordUserId].lastPlayedTimestamp = quizFinishedPayload.quizEndTime; // Use consistent end time
+        // Update user details in case they changed
+        globalLeaderboard[discordUserId].username = username;
+        globalLeaderboard[discordUserId].discriminator = discriminator;
+        globalLeaderboard[discordUserId].avatar = avatar;
+        console.log(`[GlobalLeaderboard] Updated existing player: ${username} (${discordUserId}), New Total Score: ${globalLeaderboard[discordUserId].totalScore}`);
+      } else {
+        globalLeaderboard[discordUserId] = {
+          discordUserId: discordUserId,
+          username: username,
+          discriminator: discriminator,
+          avatar: avatar,
+          totalScore: score,
+          gamesPlayed: 1,
+          lastPlayedTimestamp: quizFinishedPayload.quizEndTime // Use consistent end time
+        };
+        console.log(`[GlobalLeaderboard] Added new player: ${username} (${discordUserId}), Score: ${score}`);
+      }
+    });
+    // console.log("[GlobalLeaderboard] Current state:", JSON.stringify(globalLeaderboard, null, 2)); // For detailed debugging
   }
 };
 
+// --- Leaderboard Endpoint ---
+// GET /leaderboard - Get global leaderboard
+app.get('/leaderboard', (req, res) => {
+  // Convert globalLeaderboard object to an array
+  const leaderboardArray = Object.values(globalLeaderboard);
+
+  // Sort the array:
+  // 1. By totalScore descending
+  // 2. By gamesPlayed ascending (fewer games for same score is better)
+  // 3. By lastPlayedTimestamp descending (more recent for same score & gamesPlayed is better)
+  leaderboardArray.sort((a, b) => {
+    if (b.totalScore !== a.totalScore) {
+      return b.totalScore - a.totalScore;
+    }
+    if (a.gamesPlayed !== b.gamesPlayed) {
+      return a.gamesPlayed - b.gamesPlayed;
+    }
+    return b.lastPlayedTimestamp - a.lastPlayedTimestamp;
+  });
+
+  // Handle limit query parameter
+  let limit = parseInt(req.query.limit, 10);
+  if (isNaN(limit) || limit <= 0) {
+    limit = 100; // Default limit if not specified or invalid
+  }
+
+  const limitedLeaderboard = leaderboardArray.slice(0, limit);
+
+  console.log(`[Leaderboard] Requested global leaderboard. Returning top ${limitedLeaderboard.length} players.`);
+  res.status(200).json(limitedLeaderboard);
+});
 
 // POST /rooms/:roomId/start - Start the quiz in a room (host only)
 app.post('/rooms/:roomId/start', ensureAuthenticated, (req, res) => {
@@ -689,7 +751,7 @@ console.log("WebSocket server created, waiting for connections...");
 
 wss.on("connection", (ws) => {
   console.log("Client connected to WebSocket");
-
+  
   // ws.send("Hi there, you are connected to the WebSocket server!"); // Initial generic message can be removed or kept
 
   ws.on("message", (rawMessage) => {
