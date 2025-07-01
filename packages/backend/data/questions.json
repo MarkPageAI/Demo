@@ -1,0 +1,122 @@
+[
+  {
+    "id": "q1",
+    "text": "What is the capital of France?",
+    "choices": [
+      {"id": "q1_a", "text": "Berlin"},
+      {"id": "q1_b", "text": "Madrid"},
+      {"id": "q1_c", "text": "Paris"},
+      {"id": "q1_d", "text": "Rome"}
+    ],
+    "correctChoiceId": "q1_c",
+    "duration": 15
+  },
+  {
+    "id": "q2",
+    "text": "Which planet is known as the Red Planet?",
+    "choices": [
+      {"id": "q2_a", "text": "Earth"},
+      {"id": "q2_b", "text": "Mars"},
+      {"id": "q2_c", "text": "Jupiter"},
+      {"id": "q2_d", "text": "Venus"}
+    ],
+    "correctChoiceId": "q2_b",
+    "duration": 10
+  },
+  {
+    "id": "q3",
+    "text": "What is the largest ocean on Earth?",
+    "choices": [
+      {"id": "q3_a", "text": "Atlantic Ocean"},
+      {"id": "q3_b", "text": "Indian Ocean"},
+      {"id": "q3_c", "text": "Arctic Ocean"},
+      {"id": "q3_d", "text": "Pacific Ocean"}
+    ],
+    "correctChoiceId": "q3_d",
+    "duration": 12
+  },
+  {
+    "id": "q4",
+    "text": "Who wrote 'Hamlet'?",
+    "choices": [
+      {"id": "q4_a", "text": "Charles Dickens"},
+      {"id": "q4_b", "text": "William Shakespeare"},
+      {"id": "q4_c", "text": "Leo Tolstoy"},
+      {"id": "q4_d", "text": "Mark Twain"}
+    ],
+    "correctChoiceId": "q4_b",
+    "duration": 20
+  },
+  {
+    "id": "q5",
+    "text": "What is the chemical symbol for water?",
+    "choices": [
+      {"id": "q5_a", "text": "O2"},
+      {"id": "q5_b", "text": "H2O"},
+      {"id": "q5_c", "text": "CO2"},
+      {"id": "q5_d", "text": "NaCl"}
+    ],
+    "correctChoiceId": "q5_b",
+    "duration": 10
+  },
+  {
+    "id": "q6",
+    "text": "How many continents are there?",
+    "choices": [
+      {"id": "q6_a", "text": "5"},
+      {"id": "q6_b", "text": "6"},
+      {"id": "q6_c", "text": "7"},
+      {"id": "q6_d", "text": "8"}
+    ],
+    "correctChoiceId": "q6_c",
+    "duration": 8
+  },
+  {
+    "id": "q7",
+    "text": "What is the speed of light?",
+    "choices": [
+      {"id": "q7_a", "text": "300,000 km/s"},
+      {"id": "q7_b", "text": "150,000 km/s"},
+      {"id": "q7_c", "text": "299,792 km/s"},
+      {"id": "q7_d", "text": "450,000 km/s"}
+    ],
+    "correctChoiceId": "q7_c",
+    "duration": 15
+  },
+  {
+    "id": "q8",
+    "text": "Who painted the Mona Lisa?",
+    "choices": [
+      {"id": "q8_a", "text": "Vincent van Gogh"},
+      {"id": "q8_b", "text": "Pablo Picasso"},
+      {"id": "q8_c", "text": "Leonardo da Vinci"},
+      {"id": "q8_d", "text": "Claude Monet"}
+    ],
+    "correctChoiceId": "q8_c",
+    "duration": 15
+  },
+  {
+    "id": "q9",
+    "text": "Which is the largest mammal?",
+    "choices": [
+      {"id": "q9_a", "text": "Elephant"},
+      {"id": "q9_b", "text": "Blue Whale"},
+      {"id": "q9_c", "text": "Giraffe"},
+      {"id": "q9_d", "text": "Great White Shark"}
+    ],
+    "correctChoiceId": "q9_b",
+    "duration": 10
+  },
+  {
+    "id": "q10",
+    "text": "What is the square root of 64?",
+    "choices": [
+      {"id": "q10_a", "text": "6"},
+      {"id": "q10_b", "text": "7"},
+      {"id": "q10_c", "text": "8"},
+      {"id": "q10_d", "text": "9"}
+    ],
+    "correctChoiceId": "q10_c",
+    "duration": 8
+  }
+]

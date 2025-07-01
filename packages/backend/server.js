@@ -7,9 +7,27 @@ const DiscordStrategy = require("passport-discord").Strategy;
 const session = require("express-session");
 const { v4: uuidv4 } = require('uuid'); // Import uuid
 const path = require('path'); // Import path module
+const fs = require('fs'); // Import File System module
 
 // Load .env file specifically from the current directory
 dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+// --- Load Questions Data ---
+let allQuestions = [];
+try {
+  const questionsData = fs.readFileSync(path.resolve(__dirname, 'data/questions.json'), 'utf-8');
+  allQuestions = JSON.parse(questionsData);
+  console.log(`Successfully loaded ${allQuestions.length} questions from data/questions.json`);
+} catch (error) {
+  console.error("Error loading questions.json:", error);
+  // Consider exiting or using a default empty set if questions are critical
+}
+
+// Helper function to get random questions
+function getRandomQuestions(sourceArray, count) {
+  const shuffled = [...sourceArray].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+}
 
 // console.log("[DEBUG] Attempted to load .env from:", path.resolve(__dirname, '.env')); // Keep for debugging if needed
 // console.log("[DEBUG] DISCORD_CLIENT_ID after explicit path load:", process.env.DISCORD_CLIENT_ID);
@@ -185,6 +203,15 @@ app.post('/rooms', ensureAuthenticated, (req, res) => {
     maxPlayers: parseInt(maxPlayers, 10) || 8,
     hostId: hostUser.id,
     createdAt: Date.now(),
+    
+    // Quiz related properties
+    questions: getRandomQuestions(allQuestions, 5), // Load 5 random questions for the room
+    currentQuestionIndex: -1, // -1 indicates quiz hasn't started
+    roomState: 'waiting', // 'waiting', 'countdown', 'question_displayed', 'answer_revealed', 'finished'
+    playerAnswers: {}, // Stores answers: playerAnswers[questionId][playerId] = choiceId
+                       // Or playerAnswers[questionIndex][playerId] = { choiceId, answerTime }
+    quizStartTime: null,
+    currentQuestionStartTime: null,
     // gameSettings: {}, // Placeholder for future game settings
     // questions: [],    // Placeholder for questions
   };
@@ -322,6 +349,322 @@ app.post('/rooms/:roomId/leave', ensureAuthenticated, (req, res) => {
   res.status(200).json({ message: 'Successfully left room.', room });
 });
 
+// GET /rooms/:roomId/question - Get the current active question for a room
+app.get('/rooms/:roomId/question', ensureAuthenticated, (req, res) => {
+  const { roomId } = req.params;
+  const requestingUser = req.user;
+
+  const room = activeRooms[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: 'Room not found.' });
+  }
+
+  // Check if the requesting user is a player in this room
+  const isPlayerInRoom = room.players.some(p => p.discordUserId === requestingUser.id);
+  if (!isPlayerInRoom) {
+    return res.status(403).json({ message: 'You are not a player in this room.' });
+  }
+
+  if (room.status !== 'playing' || room.roomState !== 'question_displayed' ||
+      room.currentQuestionIndex < 0 || room.currentQuestionIndex >= room.questions.length) {
+    return res.status(404).json({ message: 'No active question currently displayed for this room.' });
+    // Or, could return a specific state: e.g., { state: room.roomState, message: 'Waiting for next question or quiz to start/end.' }
+  }
+
+  const currentQuestionFull = room.questions[room.currentQuestionIndex];
+
+  // Prepare question data for the client (omitting correctChoiceId)
+  const questionForClient = {
+    id: currentQuestionFull.id,
+    text: currentQuestionFull.text,
+    choices: currentQuestionFull.choices.map(choice => ({ id: choice.id, text: choice.text })), // Send only id and text for choices
+    duration: currentQuestionFull.duration
+  };
+
+  const questionEndTime = room.currentQuestionStartTime
+    ? room.currentQuestionStartTime + (currentQuestionFull.duration * 1000)
+    : null;
+
+  res.status(200).json({
+    question: questionForClient,
+    questionNumber: room.currentQuestionIndex + 1,
+    totalQuestions: room.questions.length,
+    questionStartTime: room.currentQuestionStartTime, // Timestamp when the current question was started by the server
+    questionEndTime: questionEndTime // Calculated timestamp when the question should end
+  });
+});
+
+// POST /rooms/:roomId/answer - Submit an answer for the current question
+app.post('/rooms/:roomId/answer', ensureAuthenticated, (req, res) => {
+  const { roomId } = req.params;
+  const player = req.user; // User object from session
+  const { choiceId } = req.body;
+
+  if (!choiceId) {
+    return res.status(400).json({ message: 'Missing choiceId in request body.' });
+  }
+
+  const room = activeRooms[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: 'Room not found.' });
+  }
+
+  const isPlayerInRoom = room.players.some(p => p.discordUserId === player.id);
+  if (!isPlayerInRoom) {
+    return res.status(403).json({ message: 'You are not a player in this room.' });
+  }
+
+  if (room.status !== 'playing' || room.roomState !== 'question_displayed' ||
+      room.currentQuestionIndex < 0 || room.currentQuestionIndex >= room.questions.length) {
+    return res.status(403).json({ message: 'Not allowed to answer at this time. No active question or quiz not in answering phase.' });
+  }
+
+  const currentQuestion = room.questions[room.currentQuestionIndex];
+  const currentQuestionId = currentQuestion.id;
+
+  // Initialize answers for this question if not already present
+  if (!room.playerAnswers) {
+    room.playerAnswers = {};
+  }
+  if (!room.playerAnswers[currentQuestionId]) {
+    room.playerAnswers[currentQuestionId] = {};
+  }
+
+  // Check if player has already answered this question
+  if (room.playerAnswers[currentQuestionId][player.id]) {
+    return res.status(409).json({ message: 'You have already answered this question.' });
+  }
+
+  // Record the answer
+  // For simplicity, just storing choiceId. Could also store timestamp etc.
+  room.playerAnswers[currentQuestionId][player.id] = choiceId;
+  console.log(`Player ${player.username} (ID: ${player.id}) in room ${roomId} answered question ${currentQuestionId} with choice ${choiceId}`);
+
+  // Optional: Notify other players that this player has answered (without revealing the answer)
+  // This would typically be done via WebSocket if desired.
+  // For now, just a server log.
+
+  res.status(200).json({ message: 'Answer received successfully.' });
+});
+
+// --- Game Logic Functions ---
+const POINTS_PER_CORRECT_ANSWER = 10; // Define points for a correct answer
+
+// Function to handle the end of a question (timer expired or all answered)
+handleQuestionEnd = (roomId) => {
+  const room = activeRooms[roomId];
+  if (!room || room.status !== 'playing' || room.roomState !== 'question_displayed') {
+    console.warn(`[handleQuestionEnd] Room ${roomId} not found, not playing, or not in question_displayed state. Current state: ${room ? room.roomState : 'N/A'}. Aborting.`);
+    return;
+  }
+
+  console.log(`[handleQuestionEnd] Processing end of question ${room.currentQuestionIndex + 1} for room ${roomId}`);
+  room.roomState = 'answer_revealed';
+
+  const endedQuestion = room.questions[room.currentQuestionIndex];
+  const correctChoiceId = endedQuestion.correctChoiceId;
+  const playerAnswersForQuestion = room.playerAnswers[endedQuestion.id] || {};
+
+  let scoreUpdates = [];
+
+  room.players.forEach(player => {
+    const playerAnswer = playerAnswersForQuestion[player.discordUserId];
+    let scoreChange = 0;
+    if (playerAnswer && playerAnswer === correctChoiceId) {
+      scoreChange = POINTS_PER_CORRECT_ANSWER;
+      player.score += scoreChange;
+    }
+    if (scoreChange > 0) { // Only include if score changed
+        scoreUpdates.push({
+            discordUserId: player.discordUserId,
+            newScore: player.score,
+            scoreChange: scoreChange
+        });
+    }
+  });
+
+  console.log(`[handleQuestionEnd] Scores updated for room ${roomId}. Correct choice was ${correctChoiceId}.`);
+
+  const answerRevealPayload = {
+    roomId: roomId,
+    questionId: endedQuestion.id,
+    correctChoiceId: correctChoiceId,
+    // Send all player info, including updated scores
+    players: room.players.map(p => ({
+        discordUserId: p.discordUserId,
+        username: p.username,
+        score: p.score,
+        avatar: p.avatar,
+        // Optionally, include what this player answered
+        answeredChoiceId: playerAnswersForQuestion[p.discordUserId] || null
+    })),
+    // Individual score updates can also be sent if frontend prefers delta, but full player list is often easier.
+    // scoreUpdates: scoreUpdates
+  };
+
+  // Broadcast 'answer_reveal' to all subscribed clients
+  wss.clients.forEach(clientWs => {
+    if (clientWs.readyState === WebSocket.OPEN && clientWs.subscribedRoomId === roomId) {
+      try {
+        clientWs.send(JSON.stringify({ event: 'answer_reveal', payload: answerRevealPayload }));
+      } catch (error) {
+        console.error(`Failed to send answer_reveal to client in room ${roomId}:`, error);
+      }
+    }
+  });
+  console.log(`[handleQuestionEnd] answer_reveal broadcasted for room ${roomId}`);
+
+  // Wait for a few seconds before proceeding to the next question or finishing
+  setTimeout(() => proceedToNextStep(roomId), 5000); // 5 seconds delay
+};
+
+// Function to proceed to the next question or finish the quiz
+const proceedToNextStep = (roomId) => {
+  const room = activeRooms[roomId];
+  if (!room || room.status !== 'playing' || room.roomState !== 'answer_revealed') {
+    console.warn(`[proceedToNextStep] Room ${roomId} not found or not in correct state. Aborting.`);
+    return;
+  }
+
+  room.currentQuestionIndex++;
+
+  if (room.currentQuestionIndex < room.questions.length) {
+    // --- Start Next Question ---
+    room.roomState = 'question_displayed';
+    room.currentQuestionStartTime = Date.now();
+
+    const nextQuestionFull = room.questions[room.currentQuestionIndex];
+    const questionForClient = {
+      id: nextQuestionFull.id,
+      text: nextQuestionFull.text,
+      choices: nextQuestionFull.choices.map(choice => ({ id: choice.id, text: choice.text })),
+      duration: nextQuestionFull.duration
+    };
+    const questionEndTime = room.currentQuestionStartTime + (nextQuestionFull.duration * 1000);
+
+    const newQuestionPayload = {
+      roomId: roomId,
+      question: questionForClient,
+      questionNumber: room.currentQuestionIndex + 1,
+      totalQuestions: room.questions.length,
+      questionStartTime: room.currentQuestionStartTime,
+      questionEndTime: questionEndTime,
+      players: room.players.map(p => ({ discordUserId: p.discordUserId, username: p.username, score: p.score, avatar: p.avatar }))
+    };
+
+    wss.clients.forEach(clientWs => {
+      if (clientWs.readyState === WebSocket.OPEN && clientWs.subscribedRoomId === roomId) {
+        clientWs.send(JSON.stringify({ event: 'new_question', payload: newQuestionPayload }));
+      }
+    });
+    console.log(`[proceedToNextStep] Next question (${room.currentQuestionIndex + 1}) sent for room ${roomId}. Timer set for ${nextQuestionFull.duration}s.`);
+    setTimeout(() => handleQuestionEnd(roomId), nextQuestionFull.duration * 1000);
+
+  } else {
+    // --- Finish Quiz ---
+    room.status = 'finished';
+    room.roomState = 'finished';
+    console.log(`[proceedToNextStep] Quiz finished for room ${roomId}.`);
+
+    const quizFinishedPayload = {
+      roomId: roomId,
+      players: room.players.sort((a, b) => b.score - a.score), // Sorted by score descending
+      quizEndTime: Date.now()
+    };
+
+    wss.clients.forEach(clientWs => {
+      if (clientWs.readyState === WebSocket.OPEN && clientWs.subscribedRoomId === roomId) {
+        clientWs.send(JSON.stringify({ event: 'quiz_finished', payload: quizFinishedPayload }));
+      }
+    });
+    // Optionally, clean up room.playerAnswers or other temporary quiz data here
+    // delete room.playerAnswers;
+    // delete room.currentQuestionStartTime;
+    // delete room.currentQuestionIndex; // Or set to -1
+  }
+};
+
+
+// POST /rooms/:roomId/start - Start the quiz in a room (host only)
+app.post('/rooms/:roomId/start', ensureAuthenticated, (req, res) => {
+  const { roomId } = req.params;
+  const requestingUser = req.user;
+
+  const room = activeRooms[roomId];
+
+  if (!room) {
+    return res.status(404).json({ message: 'Room not found.' });
+  }
+
+  if (room.hostId !== requestingUser.id) {
+    return res.status(403).json({ message: 'Only the host can start the quiz.' });
+  }
+
+  if (room.status !== 'waiting' || room.roomState !== 'waiting') {
+    return res.status(409).json({ message: `Quiz cannot be started. Room status: ${room.status}, Quiz state: ${room.roomState}` });
+  }
+
+  if (!room.questions || room.questions.length === 0) {
+    return res.status(400).json({ message: 'No questions loaded for this room. Cannot start quiz.' });
+  }
+
+  // Initialize/Reset quiz state for the room
+  room.status = 'playing';
+  room.roomState = 'question_displayed';
+  room.currentQuestionIndex = 0;
+  room.quizStartTime = Date.now();
+  room.currentQuestionStartTime = Date.now();
+  room.playerAnswers = {}; // Reset answers for a new quiz session
+  // Reset player scores if starting a new game in an existing room context (optional, depends on game flow)
+  room.players.forEach(p => p.score = 0);
+
+
+  const currentQuestionFull = room.questions[room.currentQuestionIndex];
+  const questionForClient = {
+    id: currentQuestionFull.id,
+    text: currentQuestionFull.text,
+    choices: currentQuestionFull.choices.map(choice => ({ id: choice.id, text: choice.text })),
+    duration: currentQuestionFull.duration
+  };
+  const questionEndTime = room.currentQuestionStartTime + (currentQuestionFull.duration * 1000);
+
+  const newQuestionPayload = {
+    roomId: roomId,
+    question: questionForClient,
+    questionNumber: room.currentQuestionIndex + 1,
+    totalQuestions: room.questions.length,
+    questionStartTime: room.currentQuestionStartTime,
+    questionEndTime: questionEndTime,
+    // Also send updated player scores (all zero at start)
+    players: room.players.map(p => ({ discordUserId: p.discordUserId, username: p.username, score: p.score, avatar: p.avatar }))
+  };
+
+  // Broadcast 'new_question' to all subscribed clients in this room
+  wss.clients.forEach(clientWs => {
+    if (clientWs.readyState === WebSocket.OPEN && clientWs.subscribedRoomId === roomId) {
+      try {
+        clientWs.send(JSON.stringify({ event: 'new_question', payload: newQuestionPayload }));
+      } catch (error) {
+        console.error(`Failed to send new_question to client in room ${roomId}:`, error);
+      }
+    }
+  });
+  console.log(`Quiz started in room ${roomId}. First question sent. Timer set for ${currentQuestionFull.duration}s.`);
+
+  // Set a timer for the current question's duration
+  // Ensure handleQuestionEnd is defined or this will cause an error at runtime
+  if (typeof handleQuestionEnd === 'function') {
+    setTimeout(() => handleQuestionEnd(roomId), currentQuestionFull.duration * 1000);
+  } else {
+    console.error(`[CRITICAL] handleQuestionEnd function is not defined! Timer for question end in room ${roomId} cannot be set.`);
+  }
+
+
+  res.status(200).json({ message: 'Quiz started successfully.', question: newQuestionPayload });
+});
+
 const server = http.createServer(app); // Use app for HTTP server
 
 server.listen(port, () => {
@@ -346,7 +689,7 @@ console.log("WebSocket server created, waiting for connections...");
 
 wss.on("connection", (ws) => {
   console.log("Client connected to WebSocket");
-  
+
   // ws.send("Hi there, you are connected to the WebSocket server!"); // Initial generic message can be removed or kept
 
   ws.on("message", (rawMessage) => {
@@ -388,7 +731,7 @@ wss.on("connection", (ws) => {
     } catch (error) {
       console.error("Failed to parse WebSocket message or handle it:", error);
       ws.send(JSON.stringify({ event: 'error', payload: { message: 'Invalid message format.' } }));
-    }  
+    }
   });
 
   ws.on("close", () => {
