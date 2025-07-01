@@ -207,6 +207,7 @@ app.post('/rooms', ensureAuthenticated, (req, res) => {
     maxPlayers: parseInt(maxPlayers, 10) || 8,
     hostId: hostUser.id,
     createdAt: Date.now(),
+
     // Quiz related properties
     questions: getRandomQuestions(allQuestions, 5), // Load 5 random questions for the room
     currentQuestionIndex: -1, // -1 indicates quiz hasn't started

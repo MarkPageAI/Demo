@@ -1,35 +1,59 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import RoomPage from './pages/RoomPage';
+import ResultsPage from './pages/ResultsPage';
+import NotFoundPage from './pages/NotFoundPage';
+import Navbar from './components/Navbar';
+import { AuthProvider } from './contexts/AuthContext'; // Import AuthProvider
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <AuthProvider> {/* Wrap everything with AuthProvider */}
+      <div className="App">
+        <Navbar />
+        <main className="container">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/room/:roomId" element={<RoomPage />} />
+            <Route path="/results/:roomId" element={<ResultsPage />} />
+            {/* Handle Discord OAuth Callback - A simple component to trigger verification */}
+            <Route path="/auth/callback/discord" element={<DiscordCallbackHandler />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </main>
+        <footer>
+          <p>&copy; 2024 Quiz Game</p>
+        </footer>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </AuthProvider>
+  );
 }
 
-export default App
+// Simple component to handle the callback logic
+// This page will be hit after Discord redirects back to our frontend.
+// The backend should have set a session cookie.
+// This component's job is to call verifyAuthentication from AuthContext.
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
+
+const DiscordCallbackHandler = () => {
+  const { verifyAuthentication } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleAuth = async () => {
+      await verifyAuthentication();
+      // After verification (which updates AuthContext), navigate to home or dashboard
+      navigate('/');
+    };
+    handleAuth();
+  }, [verifyAuthentication, navigate]);
+
+  return <div>Loading user session... Please wait.</div>;
+};
+
+
+export default App;
