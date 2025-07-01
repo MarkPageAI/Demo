@@ -29,6 +29,9 @@ function getRandomQuestions(sourceArray, count) {
   return shuffled.slice(0, count);
 }
 
+// console.log("[DEBUG] Attempted to load .env from:", path.resolve(__dirname, '.env')); // Keep for debugging if needed
+// console.log("[DEBUG] DISCORD_CLIENT_ID after explicit path load:", process.env.DISCORD_CLIENT_ID);
+
 const app = express();
 const port = process.env.PORT || 3001;
 
@@ -42,6 +45,7 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5173", // Allow frontend to access
   credentials: true
 }));
+
 app.use(express.json()); // To parse JSON request bodies
 
 // Express Session
@@ -199,7 +203,7 @@ app.post('/rooms', ensureAuthenticated, (req, res) => {
     maxPlayers: parseInt(maxPlayers, 10) || 8,
     hostId: hostUser.id,
     createdAt: Date.now(),
-
+    
     // Quiz related properties
     questions: getRandomQuestions(allQuestions, 5), // Load 5 random questions for the room
     currentQuestionIndex: -1, // -1 indicates quiz hasn't started
@@ -209,6 +213,7 @@ app.post('/rooms', ensureAuthenticated, (req, res) => {
     quizStartTime: null,
     currentQuestionStartTime: null,
     // gameSettings: {}, // Placeholder for future game settings
+    // questions: [],    // Placeholder for questions
   };
 
   activeRooms[roomId] = newRoom;
@@ -660,7 +665,6 @@ app.post('/rooms/:roomId/start', ensureAuthenticated, (req, res) => {
   res.status(200).json({ message: 'Quiz started successfully.', question: newQuestionPayload });
 });
 
-
 const server = http.createServer(app); // Use app for HTTP server
 
 server.listen(port, () => {
@@ -685,6 +689,7 @@ console.log("WebSocket server created, waiting for connections...");
 
 wss.on("connection", (ws) => {
   console.log("Client connected to WebSocket");
+
   // ws.send("Hi there, you are connected to the WebSocket server!"); // Initial generic message can be removed or kept
 
   ws.on("message", (rawMessage) => {
