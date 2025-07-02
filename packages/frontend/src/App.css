@@ -40,3 +40,35 @@
 .read-the-docs {
   color: #888;
 }
+
+@keyframes animatedGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animated-gradient-background {
+  background: linear-gradient(
+    -45deg,
+    #00A9E0, /* tech-blue */
+    #8A2BE2, /* creative-purple */
+    #FFD700, /* learning-yellow */
+    #4ade80  /* a nice green from Tailwind's palette */
+  );
+  background-size: 400% 400%;
+  animation: animatedGradient 15s ease infinite;
+  transition: background 0.5s ease-in-out; /* For smooth transition when class is added/removed */
+}
+
+/* Dark mode variant for the gradient */
+.dark .animated-gradient-background {
+   background: linear-gradient(
+    -45deg,
+    #075985, /* sky-700 - darker tech-blue */
+    #5b21b6, /* violet-700 - darker creative-purple */
+    #d97706, /* amber-600 - darker learning-yellow */
+    #16a34a  /* green-600 - darker green */
+  );
+  background-size: 400% 400%;
+  animation: animatedGradient 15s ease infinite;
+}
