@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react'; // Removed useContext
 import apiService from '../services/api'; // Import the actual apiService
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null); // Export AuthContext
 
-export const useAuth = () => useContext(AuthContext);
+// export const useAuth = () => useContext(AuthContext); // Moved to hooks/useAuth.js
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Changed import path
 import apiService from '../services/api'; // Để lấy BASE_URL cho login
+import ThemeToggleButton from './ThemeToggleButton'; // Import the new button
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, loading } = useAuth();
@@ -14,31 +15,46 @@ const Navbar = () => {
   };
 
   return (
-    <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: '#f0f0f0', marginBottom: '1rem' }}>
-      <div>
-        <Link to="/" style={{ marginRight: '1rem', fontWeight: 'bold', textDecoration: 'none', color: '#333' }}>
-          Quiz Game
-        </Link>
-      </div>
-      <div>
-        {loading ? (
-          <span>Loading auth...</span>
-        ) : isAuthenticated && user ? (
-          <>
-            <span style={{ marginRight: '1rem' }}>
-              Welcome, {user.username}#{user.discriminator}!
-              (ID: {user.id}, GameSessionID: {user.gameSessionId})
-            </span>
-            <button onClick={handleLogout}>Logout</button>
-          </>
-        ) : (
-          <a
-            href={`${backendUrl}/auth/discord`}
-            style={{ padding: '0.5rem 1rem', background: '#7289da', color: 'white', textDecoration: 'none', borderRadius: '4px'}}
-          >
-            Login with Discord
-          </a>
-        )}
+    <nav className="bg-white dark:bg-gray-800 shadow-md">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center py-3">
+          <div>
+            <Link to="/" className="text-2xl font-bold text-creative-purple hover:text-purple-700 dark:hover:text-purple-300 transition-colors">
+              STEAM Quiz Game
+            </Link>
+          </div>
+          <div className="flex items-center space-x-4">
+            {loading ? (
+              <span className="text-gray-500 dark:text-gray-400">Loading...</span>
+            ) : isAuthenticated && user ? (
+              <>
+                <Link to="/profile" className="text-gray-700 dark:text-gray-200 hover:text-tech-blue dark:hover:text-blue-400 transition-colors font-medium">
+                  <img
+                    src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff&size=32`}
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full inline-block mr-2 border-2 border-learning-yellow"
+                    loading="lazy"
+                  />
+                  {user.username}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-500 hover:bg-red-600 text-white py-1.5 px-3 rounded-md text-sm font-medium transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <a
+                href={`${backendUrl}/auth/discord`}
+                className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors shadow hover:shadow-lg"
+              >
+                Login with Discord
+              </a>
+            )}
+            <ThemeToggleButton /> {/* Add the toggle button here */}
+          </div>
+        </div>
       </div>
     </nav>
   );

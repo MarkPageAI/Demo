@@ -21,7 +21,7 @@ const request = async (endpoint, options = {}) => {
       let errorData;
       try {
         errorData = await response.json();
-      } catch (e) {
+      } catch (_e) { // Renamed e to _e
         // Not a JSON error response
         errorData = { message: response.statusText };
       }
