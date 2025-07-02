@@ -11,9 +11,10 @@ import './App.css';
 function App() {
   return (
     <AuthProvider> {/* Wrap everything with AuthProvider */}
-      <div className="App">
+      <div className="App flex flex-col min-h-screen"> {/* Ensure full height and flex column */}
         <Navbar />
-        <main className="container">
+        {/* Apply padding, centering, and allow content to grow and scroll if needed */}
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/room/:roomId" element={<RoomPage />} />
@@ -23,8 +24,8 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
-        <footer>
-          <p>&copy; 2024 Quiz Game</p>
+        <footer className="bg-gray-200 dark:bg-gray-800 text-center p-4 text-sm text-gray-600 dark:text-gray-400 w-full">
+          <p>&copy; {new Date().getFullYear()} STEAM Quiz Game. All rights reserved.</p>
         </footer>
       </div>
     </AuthProvider>
