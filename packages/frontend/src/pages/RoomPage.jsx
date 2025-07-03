@@ -27,9 +27,15 @@ const RoomPage = () => {
   const [isLeaving, setIsLeaving] = useState(false);
   const [selectedAnswerId, setSelectedAnswerId] = useState(null); // For user's current selection
 
-  // Timer states
+  // Timer states for question countdown
   const [timeLeft, setTimeLeft] = useState(0);
   const [totalTimeForQuestion, setTotalTimeForQuestion] = useState(0);
+
+  // States for correct answer celebration pause
+  const CORRECT_ANSWER_PAUSE_DURATION = 5; // seconds, configurable
+  const [isCelebratingCorrectAnswer, setIsCelebratingCorrectAnswer] = useState(false);
+  const [celebrationCountdown, setCelebrationCountdown] = useState(CORRECT_ANSWER_PAUSE_DURATION);
+  const [nextQuestionData, setNextQuestionData] = useState(null); // Stores next question if it arrives during celebration
 
   useEffect(() => {
     let timerInterval;
@@ -114,32 +120,54 @@ const RoomPage = () => {
         break;
       case 'new_question':
         console.log("[RoomPage] handleWebSocketMessage: Received 'new_question' event. Payload:", JSON.stringify(message.payload, null, 2));
-        setIsLoading(false); // Stop loading indicator shown by handleStartQuiz
-        setRoomDetails(prevDetails => ({
-            ...prevDetails,
-            status: 'playing',
-            roomState: 'question_displayed',
-            currentQuestionIndex: message.payload.questionNumber -1,
-            players: message.payload.players // Ensure players list (with scores) is updated
-        }));
-        setCurrentQuestion(message.payload.question);
-        setQuestionMeta({
-          number: message.payload.questionNumber,
-          total: message.payload.totalQuestions,
-          startTime: message.payload.questionStartTime,
-          endTime: message.payload.questionEndTime,
-        });
-        console.log("New question received via WebSocket:", message.payload.question);
+        if (isCelebratingCorrectAnswer) {
+          console.log("[RoomPage] Currently celebrating correct answer, deferring next question.");
+          setNextQuestionData(message.payload);
+        } else {
+          setIsLoading(false); // Stop loading indicator shown by handleStartQuiz
+          setRoomDetails(prevDetails => ({
+              ...prevDetails,
+              status: 'playing',
+              roomState: 'question_displayed',
+              currentQuestionIndex: message.payload.questionNumber - 1,
+              players: message.payload.players
+          }));
+          setCurrentQuestion(message.payload.question);
+          setQuestionMeta({
+            number: message.payload.questionNumber,
+            total: message.payload.totalQuestions,
+            startTime: message.payload.questionStartTime,
+            endTime: message.payload.questionEndTime,
+          });
+          setSelectedAnswerId(null); // Reset selection for the new question
+          setActionMessage(''); // Clear previous messages
+          console.log("New question set:", message.payload.question);
+        }
         break;
       case 'answer_reveal':
+        console.log("Answer reveal received via WebSocket:", message.payload);
+        const { players: updatedPlayers, correctChoiceId } = message.payload;
+
         setRoomDetails(prevDetails => ({
             ...prevDetails,
             roomState: 'answer_revealed',
-            players: message.payload.players // Update players with new scores
+            players: updatedPlayers
         }));
-        // Update currentQuestion to include correctChoiceId for display
-        setCurrentQuestion(prevQ => prevQ ? ({ ...prevQ, correctChoiceId: message.payload.correctChoiceId, serverAnswers: message.payload.players }) : null);
-        console.log("Answer reveal received via WebSocket:", message.payload);
+        setCurrentQuestion(prevQ => prevQ ? ({ ...prevQ, correctChoiceId: correctChoiceId, serverAnswers: updatedPlayers }) : null);
+
+        // Check if the current user answered correctly
+        const currentUserPlayer = updatedPlayers.find(p => p.id === user?.id);
+        const previousPlayerState = roomDetails?.players.find(p => p.id === user?.id);
+
+        // A simple way to check if score increased. More robust would be to check if selectedAnswerId === correctChoiceId
+        // This assumes scores only increase on correct answers.
+        const answeredCorrectly = selectedAnswerId === correctChoiceId;
+
+        if (answeredCorrectly) {
+          console.log("[RoomPage] User answered correctly! Starting celebration pause.");
+          setIsCelebratingCorrectAnswer(true);
+          setCelebrationCountdown(CORRECT_ANSWER_PAUSE_DURATION);
+        }
         break;
       case 'quiz_finished':
         setRoomDetails(prevDetails => ({ ...prevDetails, status: 'finished', roomState: 'finished', players: message.payload.players }));
@@ -255,13 +283,54 @@ const RoomPage = () => {
     }
   };
 
-  // Reset selectedAnswerId when a new question arrives
+  // Reset selectedAnswerId when a new question arrives (and not celebrating)
   useEffect(() => {
-    if (roomDetails?.roomState === 'question_displayed') {
+    if (roomDetails?.roomState === 'question_displayed' && !isCelebratingCorrectAnswer) {
       setSelectedAnswerId(null);
       setActionMessage(''); // Clear previous messages
     }
-  }, [currentQuestion?.id, roomDetails?.roomState]);
+  }, [currentQuestion?.id, roomDetails?.roomState, isCelebratingCorrectAnswer]);
+
+  // useEffect for celebration countdown
+  useEffect(() => {
+    if (isCelebratingCorrectAnswer && celebrationCountdown > 0) {
+      const timer = setTimeout(() => {
+        setCelebrationCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (isCelebratingCorrectAnswer && celebrationCountdown === 0) {
+      setIsCelebratingCorrectAnswer(false);
+      setCelebrationCountdown(CORRECT_ANSWER_PAUSE_DURATION); // Reset for next time
+      if (nextQuestionData) {
+        console.log("[RoomPage] Celebration ended, processing deferred next question:", nextQuestionData);
+        // Manually trigger the new question logic with stored data
+        // This replicates the 'new_question' case but without relying on another WebSocket message
+        setIsLoading(false);
+        setRoomDetails(prevDetails => ({
+            ...prevDetails,
+            status: 'playing',
+            roomState: 'question_displayed',
+            currentQuestionIndex: nextQuestionData.questionNumber - 1,
+            players: nextQuestionData.players
+        }));
+        setCurrentQuestion(nextQuestionData.question);
+        setQuestionMeta({
+          number: nextQuestionData.questionNumber,
+          total: nextQuestionData.totalQuestions,
+          startTime: nextQuestionData.questionStartTime,
+          endTime: nextQuestionData.questionEndTime,
+        });
+        setSelectedAnswerId(null);
+        setActionMessage('');
+        setNextQuestionData(null); // Clear the stored data
+      } else {
+        // If no next question was pending, it might mean the quiz ended or waiting for server.
+        // If roomState is still 'answer_revealed', it will show the revealed answers.
+        // If server sends 'quiz_finished' or another 'new_question' later, that will be handled.
+        console.log("[RoomPage] Celebration ended, no pending next question data.");
+      }
+    }
+  }, [isCelebratingCorrectAnswer, celebrationCountdown, nextQuestionData, roomDetails?.players]);
 
 
   if (authLoading || isLoading) {
@@ -333,7 +402,44 @@ const RoomPage = () => {
           )}
 
           <AnimatePresence mode="wait">
-            {showQuizArea && (
+            {isCelebratingCorrectAnswer && (
+              <motion.div
+                key="celebration"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white p-6 rounded-lg shadow-xl text-center flex flex-col items-center justify-center"
+                style={{ minHeight: '300px' }} // Ensure it has some height
+              >
+                <motion.h3
+                  className="text-4xl font-bold text-learning-yellow mb-3"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.4 }}
+                >
+                  Correct!
+                </motion.h3>
+                <motion.div
+                  className="text-5xl mb-4"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: [1, 1.3, 1], rotate: [0, -15, 15, -15, 0] }}
+                  transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 10 }}
+                >
+                  🎉
+                </motion.div>
+                <motion.p
+                  className="text-xl text-steam-gray-dark"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                >
+                  Next question in: <strong className="text-creative-purple text-2xl tabular-nums">{celebrationCountdown}</strong>s
+                </motion.p>
+              </motion.div>
+            )}
+
+            {!isCelebratingCorrectAnswer && showQuizArea && (
               <motion.div
                 key={currentQuestion.id} // Important for AnimatePresence to detect changes
                 initial={{ opacity: 0, x: 300 }}
