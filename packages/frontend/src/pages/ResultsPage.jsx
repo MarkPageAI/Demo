@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
-import PlayerList from '../components/PlayerList'; // Re-use for displaying final scores
+// import PlayerList from '../components/PlayerList'; // Replaced
+import PlayerStatus from '../components/PlayerStatus'; // Use new component
 import apiService from '../services/api'; // Potentially to fetch room details if not in location state
 
 const ResultsPage = () => {
@@ -69,34 +70,86 @@ const ResultsPage = () => {
   const topPlayers = sortedPlayers.slice(0, 3);
   const otherPlayers = sortedPlayers.slice(3);
 
+  // Make sure to get the current user from AuthContext to highlight them if needed.
+  const { user: currentUser } = useAuth();
+
+  // Define medal colors for top players
+  const medalColors = [
+    'bg-yellow-400 border-yellow-500', // Gold
+    'bg-gray-300 border-gray-400',   // Silver
+    'bg-yellow-600 border-yellow-700'    // Bronze (using a darker yellow/orange for bronze)
+  ];
+
   return (
-    <div>
-      <h1>Quiz Finished for "{roomName}"!</h1>
-      <h2 style={{ color: 'green' }}>Final Leaderboard</h2>
+    <div className="container mx-auto p-4 text-center">
+      <h1 className="text-4xl font-bold text-creative-purple mb-4">Quiz Finished for "{roomName}"!</h1>
+      <h2 className="text-3xl font-semibold text-tech-blue mb-8">Final Leaderboard</h2>
 
       {topPlayers.length > 0 && (
-        <div style={{ marginBottom: '2rem' }}>
-          <h3>🏆 Top Players 🏆</h3>
-          {topPlayers.map((player, index) => (
-            <div key={player.discordUserId} style={{ padding: '10px', margin: '5px', background: ['gold', 'silver', '#cd7f32'][index] || 'lightgray', borderRadius: '5px' }}>
-              <h4>{index + 1}. {player.username}#{player.discriminator} - Score: {player.score}</h4>
-            </div>
-          ))}
+        <div className="mb-12">
+          <h3 className="text-2xl font-semibold text-learning-yellow mb-6">🏆 Top Players 🏆</h3>
+          <div className="grid md:grid-cols-3 gap-4 justify-items-center">
+            {topPlayers.map((player, index) => (
+              <div key={player.id || player.discordUserId}
+                   className={`p-4 rounded-lg shadow-xl border-2 w-full max-w-sm ${medalColors[index] || 'bg-steam-gray-light border-steam-gray'}`}>
+                <div className="text-center">
+                  <span className="text-4xl">
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                  </span>
+                  <h4 className="text-xl font-bold text-steam-gray-dark mt-2">{index + 1}. {player.username}</h4>
+                  <p className="text-2xl font-semibold text-creative-purple">Score: {player.score}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Re-use PlayerList for a consistent display, or create a dedicated one */}
-      {/* If using PlayerList, it will show all players including top 3 again, which might be okay or can be filtered */}
-      <h3>All Players:</h3>
-      <PlayerList players={sortedPlayers} hostId={hostId} />
+      {otherPlayers.length > 0 && (
+        <div className="mb-12">
+          <h3 className="text-2xl font-semibold text-tech-blue mb-6">Rest of the Players</h3>
+          <div className="space-y-3 max-w-md mx-auto">
+            {otherPlayers.map(player => (
+              <PlayerStatus
+                key={player.id || player.discordUserId}
+                playerName={player.username}
+                score={player.score}
+                isCurrentPlayer={currentUser && player.id === currentUser.id}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback if topPlayers is empty but sortedPlayers has players (e.g. less than 3 players total) */}
+      {topPlayers.length === 0 && sortedPlayers.length > 0 && (
+         <div className="mb-12">
+          <h3 className="text-2xl font-semibold text-tech-blue mb-6">All Players</h3>
+          <div className="space-y-3 max-w-md mx-auto">
+            {sortedPlayers.map(player => (
+              <PlayerStatus
+                key={player.id || player.discordUserId}
+                playerName={player.username}
+                score={player.score}
+                isCurrentPlayer={currentUser && player.id === currentUser.id}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
 
-      <div style={{ marginTop: '2rem' }}>
-        <button onClick={() => navigate('/')} style={{ padding: '10px 15px', marginRight: '10px' }}>
+      <div className="mt-12 space-x-4">
+        <button
+          onClick={() => navigate('/')}
+          className="bg-tech-blue hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors"
+        >
           Back to Home
         </button>
-        {/* "Play Again" could eventually try to re-create or join a similar room */}
-        <button onClick={() => navigate('/')} style={{ padding: '10px 15px' }}>
+        <button
+          onClick={() => navigate('/')} // Should eventually lead to a new game/lobby
+          className="bg-learning-yellow hover:bg-yellow-500 text-steam-gray-dark font-bold py-3 px-6 rounded-lg shadow-md transition-colors"
+        >
           Play Another Game
         </button>
       </div>
