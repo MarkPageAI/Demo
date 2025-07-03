@@ -76,42 +76,58 @@ const HomePage = () => {
     return <div>Loading authentication status...</div>;
   }
 
+  if (authLoading) {
+    return <div className="flex justify-center items-center h-screen"><p className="text-xl text-text-secondary dark:text-slate-400">Loading authentication status...</p></div>;
+  }
+
   return (
-    <div>
-      <h1>Welcome to the Real-Time Quiz Game!</h1>
+    <div className="container mx-auto p-4 py-8">
+      <h1 className="text-4xl sm:text-5xl font-bold text-center text-creative-purple dark:text-purple-400 mb-10">
+        Welcome to the Real-Time Quiz Game!
+      </h1>
 
       {!isAuthenticated && (
-        <p>Please log in with Discord to create or join quiz rooms.</p>
-        // Login button is in Navbar
+        <p className="text-center text-text-secondary dark:text-slate-300 mb-8">
+          Please log in with Discord to create or join quiz rooms. The login button is in the navbar.
+        </p>
       )}
 
       {isAuthenticated && user && (
-        <div style={{ marginBottom: '20px', padding: '10px', border: '1px solid lightgreen' }}>
-          <p>You are logged in as: <strong>{user.username}#{user.discriminator}</strong></p>
-          <button onClick={handleCreateRoom} style={{ marginRight: '10px', padding: '10px' }}>
+        <div className="mb-8 p-4 bg-surface dark:bg-slate-700 border border-border dark:border-slate-600 rounded-lg shadow text-center">
+          <p className="text-text-primary dark:text-slate-100 mb-3">
+            You are logged in as: <strong className="text-tech-blue dark:text-blue-400">{user.username}</strong>
+          </p>
+          <button
+            onClick={handleCreateRoom}
+            className="px-6 py-2 bg-learning-yellow hover:bg-yellow-500 dark:hover:bg-yellow-600 text-slate-800 dark:text-slate-900 font-semibold rounded-lg shadow transition-colors"
+          >
             Create New Quiz Room
           </button>
         </div>
       )}
 
-      <div style={{ marginBottom: '20px', padding: '10px', border: '1px solid lightblue' }}>
-        <h2>Join Existing Room</h2>
-        <form onSubmit={handleJoinRoom}>
+      <div className="mb-8 p-6 bg-surface dark:bg-slate-700 border border-border dark:border-slate-600 rounded-lg shadow">
+        <h2 className="text-2xl font-semibold text-center text-tech-blue dark:text-blue-400 mb-6">Join Existing Room</h2>
+        <form onSubmit={handleJoinRoom} className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <input
             type="text"
             value={roomIdToJoin}
             onChange={(e) => setRoomIdToJoin(e.target.value)}
             placeholder="Enter Room ID"
-            style={{ padding: '10px', marginRight: '10px' }}
-            disabled={!isAuthenticated} // Disable if not logged in
+            className="px-4 py-2 border border-border dark:border-slate-600 rounded-md shadow-sm focus:ring-creative-purple focus:border-creative-purple dark:bg-slate-800 dark:text-slate-100 flex-grow w-full sm:w-auto"
+            disabled={!isAuthenticated}
           />
-          <button type="submit" style={{ padding: '10px' }} disabled={!isAuthenticated}>
+          <button
+            type="submit"
+            className="px-6 py-2 bg-creative-purple hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 text-white font-semibold rounded-lg shadow transition-colors disabled:opacity-50 w-full sm:w-auto"
+            disabled={!isAuthenticated}
+          >
             Join Room
           </button>
         </form>
       </div>
 
-      {actionMessage && <p style={{ color: actionMessage.startsWith('Error') ? 'red' : 'green' }}>{actionMessage}</p>}
+      {actionMessage && <p className={`text-center my-4 text-sm ${actionMessage.startsWith('Error') ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{actionMessage}</p>}
 
       <GlobalLeaderboard
         leaderboardData={leaderboard}

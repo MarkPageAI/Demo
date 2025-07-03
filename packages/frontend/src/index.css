@@ -3,42 +3,86 @@
 @tailwind utilities;
 
 :root {
+  /* Light Theme (Default) */
+  --color-background: #ffffff; /* White */
+  --color-text-primary: #1f2937; /* Tailwind gray-800 */
+  --color-text-secondary: #4b5563; /* Tailwind gray-600 */
+  --color-text-muted: #6b7280; /* Tailwind gray-500 */
+
+  --color-surface: #f9fafb; /* Tailwind gray-50, for cards, modals */
+  --color-border: #e5e7eb; /* Tailwind gray-200 */
+
+  --color-primary: #007bff; /* tech-blue */
+  --color-secondary: #6f42c1; /* creative-purple */
+  --color-accent: #ffc107; /* learning-yellow */
+
+  --color-primary-hover: #0056b3;
+  --color-secondary-hover: #5a2d91;
+  --color-accent-hover: #e0a800;
+
+  /* Default text and background using CSS vars */
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
+
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  color-scheme: light; /* Explicitly light by default */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+html.dark {
+  /* Dark Theme */
+  --color-background: #1a202c; /* Tailwind gray-900 / slate-800 */
+  --color-text-primary: #e2e8f0; /* Tailwind slate-200 */
+  --color-text-secondary: #94a3b8; /* Tailwind slate-400 */
+  --color-text-muted: #64748b; /* Tailwind slate-500 */
+
+  --color-surface: #2d3748; /* Tailwind gray-800 / slate-700 */
+  --color-border: #4a5568; /* Tailwind gray-600 / slate-600 */
+
+  /* Primary, Secondary, Accent might need dark theme variants if the originals don't have enough contrast */
+  /* For now, keeping them same, but they can be overridden here: */
+  /* --color-primary: #some-dark-theme-primary; */
+
+  color-scheme: dark;
 }
 
+
+/* Basic reset and body styles */
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  /* display: flex; // Removing this as it might not be suitable for all pages
+  place-items: center; // Removing this */
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--color-background); /* Apply background to body */
+  color: var(--color-text-primary); /* Apply default text color to body */
+  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth theme transition */
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Generic link styling using CSS vars */
+a {
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: inherit;
+  transition: color 0.2s ease;
+}
+a:hover {
+  color: var(--color-primary-hover);
 }
 
+/* Remove the old media query for prefers-color-scheme as we now control via class */
+/*
+@media (prefers-color-scheme: light) { ... }
+*/
+
+/* Tailwind applies its own button base styles, so we might not need these generic button styles anymore,
+   or they should be very minimal if kept. For now, commenting out to rely more on Tailwind utilities.
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -46,7 +90,7 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #1a1a1a; // This is a dark background, problematic for light theme
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -57,16 +101,11 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+*/
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
+/* Example of a global element style using CSS Vars */
+/* h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+  color: var(--color-text-primary);
+} */

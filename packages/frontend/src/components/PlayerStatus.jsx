@@ -28,28 +28,46 @@ const Avatar = ({ userId, avatarHash, name }) => {
 
 const PlayerStatus = ({ userId, avatarHash, playerName, score, isCurrentPlayer = false, averageTime = null }) => {
   // Basic structure for displaying a player's status
+  const baseClasses = "p-3 flex flex-col sm:flex-row items-center justify-between gap-2 rounded-lg shadow border";
+  const themeClasses = isCurrentPlayer
+    ? "bg-learning-yellow/70 dark:bg-learning-yellow/60 border-yellow-500 dark:border-yellow-400"
+    : "bg-surface dark:bg-slate-700 border-border dark:border-slate-600";
+
+  const nameColor = isCurrentPlayer
+    ? "text-slate-800 dark:text-slate-900"
+    : "text-tech-blue dark:text-blue-400";
+
+  const avgTimeColor = isCurrentPlayer
+    ? "text-slate-700 dark:text-slate-800"
+    : "text-creative-purple dark:text-purple-400";
+
+  const scoreTextColor = isCurrentPlayer
+    ? "text-slate-800 dark:text-slate-900"
+    : "text-text-secondary dark:text-slate-300";
+
+  const scoreValueColor = isCurrentPlayer
+    ? "text-slate-900 dark:text-white"
+    : "text-creative-purple dark:text-purple-300";
+
 
   return (
-    <div
-      className={`p-3 flex flex-col sm:flex-row items-center justify-between gap-2 rounded-lg shadow
-                  ${isCurrentPlayer ? 'bg-learning-yellow/80 border-2 border-yellow-600' : 'bg-steam-gray-light border border-steam-gray'}`}
-    >
+    <div className={`${baseClasses} ${themeClasses}`}>
       <div className="flex items-center space-x-3 w-full sm:w-auto">
         <Avatar userId={userId} avatarHash={avatarHash} name={playerName} />
         <div className="flex-grow">
-          <span className={`block font-semibold text-sm sm:text-base ${isCurrentPlayer ? 'text-steam-gray-dark' : 'text-tech-blue'}`}>
+          <span className={`block font-semibold text-sm sm:text-base ${nameColor}`}>
             {playerName || 'Waiting...'}
           </span>
           {averageTime !== null && (
-            <span className={`block text-xs ${isCurrentPlayer ? 'text-steam-gray-dark/80' : 'text-creative-purple/80'}`}>
+            <span className={`block text-xs ${avgTimeColor}`}>
               Avg Time: {averageTime.toFixed(2)}s
             </span>
           )}
         </div>
       </div>
       <div className="text-right">
-        <span className={`block text-lg font-bold ${isCurrentPlayer ? 'text-white' : 'text-steam-gray-dark'}`}>
-          Score: <span className={isCurrentPlayer ? 'text-white' : 'text-creative-purple'}>{score}</span>
+        <span className={`block text-lg font-bold ${scoreTextColor}`}>
+          Score: <span className={scoreValueColor}>{score}</span>
         </span>
       </div>
     </div>

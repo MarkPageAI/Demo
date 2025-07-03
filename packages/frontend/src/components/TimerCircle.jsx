@@ -21,7 +21,7 @@ const TimerCircle = ({ timeLeft, totalTime, size = 100 }) => {
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg className="transform -rotate-90" width={size} height={size}>
         <circle
-          className="text-steam-gray-light"
+          className="text-steam-gray-light dark:text-slate-700" // Background circle
           strokeWidth="10"
           stroke="currentColor"
           fill="transparent"
@@ -30,7 +30,7 @@ const TimerCircle = ({ timeLeft, totalTime, size = 100 }) => {
           cy={size / 2}
         />
         <circle
-          className={`transition-stroke-dashoffset duration-300 ease-linear ${strokeColor}`}
+          className={`transition-stroke-dashoffset duration-300 ease-linear ${strokeColor}`} // Progress stroke
           strokeWidth="10"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -42,7 +42,7 @@ const TimerCircle = ({ timeLeft, totalTime, size = 100 }) => {
           cy={size / 2}
         />
       </svg>
-      <div className="absolute text-2xl font-bold text-steam-gray-dark">
+      <div className="absolute text-2xl font-bold text-text-secondary dark:text-slate-300"> {/* Countdown text */}
         {timeLeft}
       </div>
     </div>

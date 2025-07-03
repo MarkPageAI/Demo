@@ -5,16 +5,20 @@ const QuestionCard = ({ question, onAnswer }) => {
   // Styling will be done using Tailwind CSS classes based on the design system
 
   if (!question) {
-    return <div className="p-4 bg-steam-gray-light rounded-lg shadow-md">Loading question...</div>;
+    return (
+      <div className="p-4 bg-surface dark:bg-slate-700 rounded-lg shadow-md text-text-secondary dark:text-slate-400">
+        Loading question...
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-xl border border-steam-gray">
-      <h2 className="text-2xl font-bold mb-4 text-tech-blue">{question.text}</h2>
+    <div className="p-6 bg-surface dark:bg-slate-700 rounded-lg shadow-xl border border-border dark:border-slate-600">
+      <h2 className="text-2xl font-bold mb-4 text-tech-blue dark:text-blue-400">{question.text}</h2>
       {/* Render options or other question elements here later */}
       {/* For now, a placeholder for where answer options would go */}
       <div className="mt-4 space-y-2">
-        <p className="text-steam-gray">Answer options will appear here.</p>
+        <p className="text-text-muted dark:text-slate-400">Answer options will appear here.</p>
       </div>
       {/* Example of using a themed button, assuming 'onAnswer' is a generic handler for now */}
       {/* <button

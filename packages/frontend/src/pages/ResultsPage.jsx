@@ -97,18 +97,19 @@ const ResultsPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 text-center">
-      <h1 className="text-4xl font-bold text-creative-purple mb-4">Quiz Finished for "{roomName}"!</h1>
-      <h2 className="text-3xl font-semibold text-tech-blue mb-8">Final Leaderboard</h2>
+    <div className="container mx-auto p-4 text-center min-h-screen">
+      <h1 className="text-4xl font-bold text-creative-purple dark:text-purple-400 mb-4">Quiz Finished for "{roomName}"!</h1>
+      <h2 className="text-3xl font-semibold text-tech-blue dark:text-blue-400 mb-8">Final Leaderboard</h2>
 
       {topPlayers.length > 0 && (
         <div className="mb-12">
-          <h3 className="text-2xl font-semibold text-learning-yellow mb-6">🏆 Top Players 🏆</h3>
+          <h3 className="text-2xl font-semibold text-learning-yellow dark:text-yellow-400 mb-6">🏆 Top Players 🏆</h3>
           <div className="grid md:grid-cols-3 gap-4 justify-items-center">
             {topPlayers.map((player, index) => (
               <motion.div
                 key={player.discordUserId} // Use discordUserId as key
-                className={`p-4 rounded-lg shadow-xl border-2 w-full max-w-sm ${medalColors[index] || 'bg-steam-gray-light border-steam-gray'}`}
+                className={`p-4 rounded-lg shadow-xl border-2 w-full max-w-sm
+                            ${medalColors[index] || 'bg-surface dark:bg-slate-700 border-border dark:border-slate-600'}`}
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.2, duration: 0.5 }}
@@ -127,8 +128,8 @@ const ResultsPage = () => {
                   >
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                   </motion.span>
-                  <h4 className="text-xl font-bold text-steam-gray-dark mt-1">{index + 1}. {player.username}</h4>
-                  <p className="text-2xl font-semibold text-creative-purple">Score: {player.score}</p>
+                  <h4 className="text-xl font-bold text-text-primary dark:text-slate-100 mt-1">{index + 1}. {player.username}</h4>
+                  <p className="text-2xl font-semibold text-creative-purple dark:text-purple-400">Score: {player.score}</p>
                 </div>
               </motion.div>
             ))}
@@ -138,8 +139,8 @@ const ResultsPage = () => {
 
       {/* Placeholder for Topic Progress - visible only if currentUser has topicPerformance data */}
       {currentUser && finalRoomDetails.players.find(p => p.discordUserId === currentUser.id)?.topicPerformance && (
-        <div className="my-12 p-6 bg-white shadow-lg rounded-lg max-w-lg mx-auto">
-          <h3 className="text-2xl font-semibold text-creative-purple mb-6 text-center">Your Topic Performance</h3>
+        <div className="my-12 p-6 bg-surface dark:bg-slate-800 shadow-lg rounded-lg max-w-lg mx-auto border border-border dark:border-slate-700">
+          <h3 className="text-2xl font-semibold text-creative-purple dark:text-purple-400 mb-6 text-center">Your Topic Performance</h3>
           {finalRoomDetails.players.find(p => p.discordUserId === currentUser.id).topicPerformance.map(topic => (
             <TopicProgressBar
               key={topic.name}
@@ -148,7 +149,7 @@ const ResultsPage = () => {
               color={topic.color || 'bg-tech-blue'} // Allow custom color per topic if provided
             />
           ))}
-          <div className="mt-6">
+          <div className="mt-6"> {/* Chart component itself should handle its internal theming or be passed theme props */}
             <TopicPerformanceChart data={finalRoomDetails.players.find(p => p.discordUserId === currentUser.id).topicPerformance} />
           </div>
         </div>
@@ -156,7 +157,7 @@ const ResultsPage = () => {
 
       {otherPlayers.length > 0 && (
         <div className="mb-12">
-          <h3 className="text-2xl font-semibold text-tech-blue mb-6">Rest of the Players</h3>
+          <h3 className="text-2xl font-semibold text-tech-blue dark:text-blue-400 mb-6">Rest of the Players</h3>
           <div className="space-y-3 max-w-md mx-auto">
             {otherPlayers.map(player => (
               <PlayerStatus
@@ -197,13 +198,13 @@ const ResultsPage = () => {
       <div className="mt-12 space-x-4">
         <button
           onClick={() => navigate('/')}
-          className="bg-tech-blue hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors"
+          className="bg-tech-blue hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors"
         >
           Back to Home
         </button>
         <button
           onClick={() => navigate('/')} // Should eventually lead to a new game/lobby
-          className="bg-learning-yellow hover:bg-yellow-500 text-steam-gray-dark font-bold py-3 px-6 rounded-lg shadow-md transition-colors"
+          className="bg-learning-yellow hover:bg-yellow-500 dark:hover:bg-yellow-600 text-slate-800 dark:text-slate-900 font-bold py-3 px-6 rounded-lg shadow-md transition-colors"
         >
           Play Another Game
         </button>

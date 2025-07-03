@@ -2,29 +2,23 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const AnswerOption = ({ option, onSelect, isSelected, isCorrect, revealAnswer, disabled }) => {
-  // Determine background color based on state
-  let bgColor = 'bg-steam-gray-light hover:bg-steam-gray'; // Default
-  let textColor = 'text-steam-gray-dark';
-  let borderColor = 'border-transparent'; // Default no border
+  let optionStyleClasses = "";
+  const baseButtonClasses = "w-full p-4 rounded-lg shadow text-left transition-colors duration-100 ease-in-out border-2 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed font-medium text-lg";
 
   if (revealAnswer) {
     if (isCorrect) {
-      bgColor = 'bg-green-500';
-      textColor = 'text-white';
-      borderColor = 'border-green-700';
+      optionStyleClasses = "bg-green-500 dark:bg-green-600 text-white border-green-700 dark:border-green-500";
     } else if (isSelected && !isCorrect) {
-      bgColor = 'bg-red-500';
-      textColor = 'text-white';
-      borderColor = 'border-red-700';
+      optionStyleClasses = "bg-red-500 dark:bg-red-600 text-white border-red-700 dark:border-red-500";
     } else {
       // Other non-selected, non-correct options when answer is revealed
-      bgColor = 'bg-steam-gray-light opacity-60';
-      textColor = 'text-steam-gray';
+      optionStyleClasses = "bg-surface/60 dark:bg-slate-700/60 border-border/50 dark:border-slate-600/50 text-text-muted dark:text-slate-400";
     }
   } else if (isSelected) {
-    bgColor = 'bg-creative-purple'; // Selected by user before reveal
-    textColor = 'text-white';
-    borderColor = 'border-creative-purple'; // Add border to selected
+    optionStyleClasses = "bg-creative-purple dark:bg-purple-700 text-white border-creative-purple dark:border-purple-500 ring-2 ring-purple-500 dark:ring-purple-400";
+  } else {
+    // Default, not selected, not revealed
+    optionStyleClasses = "bg-surface hover:bg-steam-gray-light dark:bg-slate-700 dark:hover:bg-slate-600 border-border dark:border-slate-600 text-text-primary dark:text-slate-100 focus:ring-2 focus:ring-creative-purple dark:focus:ring-purple-500";
   }
 
   // Animation variants
@@ -68,18 +62,13 @@ const AnswerOption = ({ option, onSelect, isSelected, isCorrect, revealAnswer, d
       initial="initial" // Animation on first mount
       animate={animateTarget} // Target state for animation changes
       exit="exit"
-      whileHover={{ scale: disabled || revealAnswer ? 1 : 1.03 }}
-      whileTap={{ scale: disabled || revealAnswer ? 1 : 0.97 }}
+      whileHover={{ scale: (disabled || revealAnswer) ? 1 : 1.03 }}
+      whileTap={{ scale: (disabled || revealAnswer) ? 1 : 0.97 }}
       onClick={() => onSelect(option.id)}
       disabled={disabled || revealAnswer}
-      className={`w-full p-4 rounded-lg shadow text-left transition-colors duration-100 ease-in-out border-2
-                  ${bgColor}
-                  ${textColor}
-                  ${borderColor}
-                  ${!revealAnswer && !isSelected ? 'focus:ring-2 focus:ring-creative-purple focus:outline-none' : ''}
-                  disabled:opacity-70 disabled:cursor-not-allowed`}
+      className={`${baseButtonClasses} ${optionStyleClasses}`}
     >
-      <p className="text-lg font-medium">{option.text}</p>
+      <p>{option.text}</p> {/* Removed font-medium and text-lg to inherit from baseButtonClasses or let optionStyleClasses handle it */}
     </motion.button>
   );
 };
