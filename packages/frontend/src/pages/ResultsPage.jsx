@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 // import PlayerList from '../components/PlayerList'; // Replaced
 import PlayerStatus from '../components/PlayerStatus'; // Use new component
 import apiService from '../services/api'; // Potentially to fetch room details if not in location state
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 
 const ResultsPage = () => {
   const { roomId } = useParams();
