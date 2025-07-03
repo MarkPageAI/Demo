@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 
 const AnswerOption = ({ option, onSelect, isSelected, isCorrect, revealAnswer, disabled }) => {
   let optionStyleClasses = "";
-  const baseButtonClasses = "w-full p-4 rounded-lg shadow text-left transition-colors duration-100 ease-in-out border-2 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed font-medium text-lg";
+  // Adjusted base padding and text size for mobile first
+  const baseButtonClasses = "w-full p-3 sm:p-4 rounded-lg shadow text-left transition-colors duration-100 ease-in-out border-2 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed font-medium text-base sm:text-lg";
 
   if (revealAnswer) {
     if (isCorrect) {

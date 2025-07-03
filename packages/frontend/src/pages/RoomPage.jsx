@@ -383,20 +383,19 @@ const RoomPage = () => {
   const showAnimatedBg = showQuizArea && !isCelebratingCorrectAnswer;
 
   return (
-    <div className={`container mx-auto p-4 min-h-screen ${showAnimatedBg ? 'quiz-active-background' : ''}`}>
-      <div className="mb-6 p-4 bg-surface dark:bg-slate-800 shadow-md rounded-lg border border-border dark:border-slate-700">
-        <h2 className="text-3xl font-bold text-tech-blue dark:text-blue-400">Room: {roomDetails.name}
-          <span className="text-sm text-text-muted dark:text-slate-400 ml-2">(ID: {roomId})</span>
+    <div className={`container mx-auto px-2 py-4 sm:p-4 min-h-screen ${showAnimatedBg ? 'quiz-active-background' : ''}`}> {/* Adjusted page padding */}
+      <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-surface dark:bg-slate-800 shadow-md rounded-lg border border-border dark:border-slate-700"> {/* Adjusted header padding & margin */}
+        <h2 className="text-2xl sm:text-3xl font-bold text-tech-blue dark:text-blue-400">Room: {roomDetails.name}
+          <span className="text-xs sm:text-sm text-text-muted dark:text-slate-400 ml-2">(ID: {roomId})</span>
         </h2>
-        <p className="text-creative-purple dark:text-purple-400">Status: <strong className="font-semibold">{roomDetails.status}</strong> | Quiz State: <strong className="font-semibold">{roomDetails.roomState}</strong></p>
-        {actionMessage && <p className={`mt-2 text-sm ${actionMessage.startsWith('Error') ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{actionMessage}</p>}
+        <p className="text-sm sm:text-base text-creative-purple dark:text-purple-400">Status: <strong className="font-semibold">{roomDetails.status}</strong> | Quiz State: <strong className="font-semibold">{roomDetails.roomState}</strong></p>
+        {actionMessage && <p className={`mt-2 text-xs sm:text-sm ${actionMessage.startsWith('Error') ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{actionMessage}</p>}
       </div>
 
-      {/* Changed to md:grid-cols-4 to give more space to quiz area on medium+ screens */}
-      <div className="grid md:grid-cols-4 gap-6">
+      <div className="grid md:grid-cols-4 gap-4 sm:gap-6"> {/* Adjusted grid gap */}
         {/* Players Section - now takes 1/4 on md+ screens */}
-        <div className="md:col-span-1 space-y-3">
-          <h3 className="text-xl font-semibold text-tech-blue dark:text-blue-400 mb-2">Players ({roomDetails.players?.length || 0})</h3>
+        <div className="md:col-span-1 space-y-2 sm:space-y-3">
+          <h3 className="text-lg sm:text-xl font-semibold text-tech-blue dark:text-blue-400 mb-2">Players ({roomDetails.players?.length || 0})</h3>
           <AnimatePresence>
             {roomDetails.players && roomDetails.players.length > 0 ? (
               roomDetails.players.map(p => (
@@ -426,28 +425,28 @@ const RoomPage = () => {
         {/* Main Quiz Area / Waiting Area - now takes 3/4 on md+ screens */}
         <div className="md:col-span-3 relative">
           {roomDetails.status === 'waiting' && roomDetails.roomState === 'waiting' && (
-            <div className="bg-surface dark:bg-slate-800 p-6 rounded-lg shadow-xl text-center border border-border dark:border-slate-700">
+            <div className="bg-surface dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-xl text-center border border-border dark:border-slate-700"> {/* Adjusted padding */}
               {isHost ? (
                 <>
-                  <h3 className="text-2xl font-semibold text-creative-purple dark:text-purple-400 mb-4">Waiting for players...</h3>
-                  <p className="text-text-secondary dark:text-slate-400 mb-6">As the host, you can start the quiz when ready.</p>
+                  <h3 className="text-xl sm:text-2xl font-semibold text-creative-purple dark:text-purple-400 mb-3 sm:mb-4">Waiting for players...</h3>
+                  <p className="text-sm sm:text-base text-text-secondary dark:text-slate-400 mb-4 sm:mb-6">As the host, you can start the quiz when ready.</p>
                   <button
                     onClick={handleStartQuiz}
-                    className="bg-learning-yellow hover:bg-yellow-500 dark:hover:bg-yellow-600 text-slate-800 dark:text-slate-900 font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105"
+                    className="bg-learning-yellow hover:bg-yellow-500 dark:hover:bg-yellow-600 text-slate-800 dark:text-slate-900 font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 text-sm sm:text-base"
                   >
                     Start Quiz
                   </button>
                 </>
               ) : (
-                <h3 className="text-2xl font-semibold text-creative-purple dark:text-purple-400 mb-4">Waiting for the host to start the quiz...</h3>
+                <h3 className="text-xl sm:text-2xl font-semibold text-creative-purple dark:text-purple-400 mb-4">Waiting for the host to start the quiz...</h3>
               )}
               {currentSteamTip && (
                 <motion.div
-                  key={currentSteamTip} // Animate when tip changes
+                  key={currentSteamTip}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="mt-8 p-4 bg-tech-blue/10 dark:bg-blue-900/30 border border-tech-blue/30 dark:border-blue-700 rounded-lg text-sm text-tech-blue dark:text-blue-300"
+                  className="mt-6 sm:mt-8 p-3 sm:p-4 bg-tech-blue/10 dark:bg-blue-900/30 border border-tech-blue/30 dark:border-blue-700 rounded-lg text-xs sm:text-sm text-tech-blue dark:text-blue-300"
                 >
                   <p className="font-semibold">💡 STEAM Fact/Tip:</p>
                   <p>{currentSteamTip}</p>
@@ -464,11 +463,11 @@ const RoomPage = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.5 }}
-                className="bg-surface dark:bg-slate-800 p-6 rounded-lg shadow-xl text-center flex flex-col items-center justify-center border border-border dark:border-slate-700"
-                style={{ minHeight: '300px' }} // Ensure it has some height
+                className="bg-surface dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-xl text-center flex flex-col items-center justify-center border border-border dark:border-slate-700" // Adjusted padding
+                style={{ minHeight: '250px', sm: {minHeight: '300px'} }}
               >
                 <motion.h3
-                  className="text-4xl font-bold text-learning-yellow dark:text-yellow-400 mb-3"
+                  className="text-3xl sm:text-4xl font-bold text-learning-yellow dark:text-yellow-400 mb-2 sm:mb-3"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, duration: 0.4 }}
@@ -484,12 +483,12 @@ const RoomPage = () => {
                   🎉
                 </motion.div>
                 <motion.p
-                  className="text-xl text-steam-gray-dark"
+                  className="text-lg sm:text-xl text-text-secondary dark:text-slate-300"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6, duration: 0.5 }}
                 >
-                  Next question in: <strong className="text-creative-purple dark:text-purple-400 text-2xl tabular-nums">{celebrationCountdown}</strong>s
+                  Next question in: <strong className="text-creative-purple dark:text-purple-400 text-xl sm:text-2xl tabular-nums">{celebrationCountdown}</strong>s
                 </motion.p>
               </motion.div>
             )}
@@ -501,10 +500,10 @@ const RoomPage = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -300 }}
                 transition={{ duration: 1.5, ease: "easeInOut" }}
-                className="bg-surface dark:bg-slate-800 p-6 rounded-lg shadow-xl border border-border dark:border-slate-700"
+                className="bg-surface dark:bg-slate-800 p-3 sm:p-4 md:p-6 rounded-lg shadow-xl border border-border dark:border-slate-700" // Adjusted padding
               >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-semibold text-tech-blue dark:text-blue-400">
+                <div className="flex justify-between items-center mb-4 sm:mb-6"> {/* Adjusted margin */}
+                  <h3 className="text-base sm:text-xl font-semibold text-tech-blue dark:text-blue-400">
                     Question {questionMeta.number} of {questionMeta.total}
                   </h3>
                   <TimerCircle timeLeft={timeLeft} totalTime={totalTimeForQuestion} size={80} />
