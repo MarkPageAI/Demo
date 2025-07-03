@@ -84,6 +84,18 @@ const ResultsPage = () => {
     'bg-yellow-600 border-yellow-700'    // Bronze (using a darker yellow/orange for bronze)
   ];
 
+  // Small local component for podium avatars
+  const PodiumAvatar = ({ userId, avatarHash, name }) => {
+    const [imgError, setImgError] = useState(false);
+    if (avatarHash && userId && !imgError) {
+      const isAnimated = avatarHash.startsWith('a_');
+      const extension = isAnimated ? 'gif' : 'png';
+      const avatarUrl = `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${extension}?size=128`;
+      return <img src={avatarUrl} alt={`${name}'s avatar`} className="w-24 h-24 rounded-full mx-auto mb-3 border-4 border-white shadow-lg object-cover" onError={() => setImgError(true)} />;
+    }
+    return <div className="w-24 h-24 rounded-full bg-creative-purple flex items-center justify-center text-white font-bold text-4xl mx-auto mb-3 border-4 border-white shadow-lg">{name ? name.charAt(0).toUpperCase() : '?'}</div>;
+  };
+
   return (
     <div className="container mx-auto p-4 text-center">
       <h1 className="text-4xl font-bold text-creative-purple mb-4">Quiz Finished for "{roomName}"!</h1>
@@ -105,19 +117,20 @@ const ResultsPage = () => {
                   boxShadow: `0px 0px 15px 5px ${index === 0 ? 'rgba(251, 191, 36, 0.7)' : index === 1 ? 'rgba(192, 192, 192, 0.7)' : 'rgba(205, 127, 50, 0.7)'}` // Gold, Silver, Bronze glow
                 }}
               >
+                <PodiumAvatar userId={player.id} avatarHash={player.avatar} name={player.username} />
                 <div className="text-center">
                   <motion.span
-                    className="text-5xl"
+                    className="text-5xl block -mt-8" // Adjusted margin for medal overlap
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: index * 0.2 + 0.3, type: "spring", stiffness: 150 }}
                   >
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                  </span>
-                  <h4 className="text-xl font-bold text-steam-gray-dark mt-2">{index + 1}. {player.username}</h4>
+                  </motion.span>
+                  <h4 className="text-xl font-bold text-steam-gray-dark mt-1">{index + 1}. {player.username}</h4>
                   <p className="text-2xl font-semibold text-creative-purple">Score: {player.score}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
