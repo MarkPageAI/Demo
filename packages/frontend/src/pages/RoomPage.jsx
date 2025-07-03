@@ -37,6 +37,28 @@ const RoomPage = () => {
   const [celebrationCountdown, setCelebrationCountdown] = useState(CORRECT_ANSWER_PAUSE_DURATION);
   const [nextQuestionData, setNextQuestionData] = useState(null); // Stores next question if it arrives during celebration
 
+  // STEAM Tips
+  const steamTips = [
+    "STEAM stands for Science, Technology, Engineering, Arts, and Mathematics.",
+    "The 'A' in STEAM emphasizes creativity and design thinking.",
+    "Coding is a fundamental skill in many STEAM fields.",
+    "The Mars Rover 'Perseverance' uses advanced robotics and AI, core STEAM concepts.",
+    "3D printing is a STEAM technology that allows for rapid prototyping.",
+    "Biotechnology combines biology and technology to create new products.",
+    "Data science involves extracting insights from large datasets using STEAM skills.",
+    "Renewable energy technologies like solar and wind power are key areas of STEAM innovation.",
+    "The Fibonacci sequence appears surprisingly often in nature and art.",
+    "Game development often requires a blend of programming, art, and physics."
+  ];
+  const [currentSteamTip, setCurrentSteamTip] = useState('');
+
+  useEffect(() => {
+    if (roomDetails?.status === 'waiting') {
+      setCurrentSteamTip(steamTips[Math.floor(Math.random() * steamTips.length)]);
+    }
+  }, [roomDetails?.status]);
+
+
   useEffect(() => {
     let timerInterval;
     if (questionMeta.startTime && questionMeta.endTime && roomDetails?.roomState === 'question_displayed') {
@@ -370,34 +392,61 @@ const RoomPage = () => {
       <div className="grid md:grid-cols-3 gap-6">
         {/* Players Section */}
         <div className="md:col-span-1 space-y-3">
-          <h3 className="text-xl font-semibold text-tech-blue mb-2">Players</h3>
-          {roomDetails.players && roomDetails.players.length > 0 ? (
-            roomDetails.players.map(p => (
-              <PlayerStatus
-                key={p.id}
-                playerName={p.username || `Player ${p.id.substring(0,6)}`}
-                score={p.score}
-                // Highlight if this player is the current user, or if they are the host
-                isCurrentPlayer={user && p.id === user.id}
-              />
-            ))
-          ) : (
-            <p className="text-steam-gray">No players yet.</p>
-          )}
+          <h3 className="text-xl font-semibold text-tech-blue mb-2">Players ({roomDetails.players?.length || 0})</h3>
+          <AnimatePresence>
+            {roomDetails.players && roomDetails.players.length > 0 ? (
+              roomDetails.players.map(p => (
+                <motion.div
+                  key={p.id}
+                  layout // Enables automatic animation when items reorder or change.
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
+                  <PlayerStatus
+                    playerName={p.username || `Player ${p.id.substring(0,6)}`}
+                    score={p.score}
+                    isCurrentPlayer={user && p.id === user.id}
+                  />
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-steam-gray">No players yet.</p>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Main Quiz Area / Waiting Area */}
-        <div className="md:col-span-2">
-          {isHost && roomDetails.status === 'waiting' && roomDetails.roomState === 'waiting' && (
+        <div className="md:col-span-2 relative"> {/* Added relative for potential absolute positioning of tips */}
+          {roomDetails.status === 'waiting' && roomDetails.roomState === 'waiting' && (
             <div className="bg-white p-6 rounded-lg shadow-xl text-center">
-              <h3 className="text-2xl font-semibold text-creative-purple mb-4">Waiting for players...</h3>
-              <p className="text-steam-gray mb-6">As the host, you can start the quiz when ready.</p>
-              <button
-                onClick={handleStartQuiz}
-                className="bg-learning-yellow hover:bg-yellow-500 text-steam-gray-dark font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105"
-              >
-                Start Quiz
-              </button>
+              {isHost ? (
+                <>
+                  <h3 className="text-2xl font-semibold text-creative-purple mb-4">Waiting for players...</h3>
+                  <p className="text-steam-gray mb-6">As the host, you can start the quiz when ready.</p>
+                  <button
+                    onClick={handleStartQuiz}
+                    className="bg-learning-yellow hover:bg-yellow-500 text-steam-gray-dark font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105"
+                  >
+                    Start Quiz
+                  </button>
+                </>
+              ) : (
+                <h3 className="text-2xl font-semibold text-creative-purple mb-4">Waiting for the host to start the quiz...</h3>
+              )}
+              {currentSteamTip && (
+                <motion.div
+                  key={currentSteamTip} // Animate when tip changes
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="mt-8 p-4 bg-tech-blue/10 border border-tech-blue/30 rounded-lg text-sm text-tech-blue"
+                >
+                  <p className="font-semibold">💡 STEAM Fact/Tip:</p>
+                  <p>{currentSteamTip}</p>
+                </motion.div>
+              )}
             </div>
           )}
 
