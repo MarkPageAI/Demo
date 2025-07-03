@@ -2,7 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api'; // Để lấy BASE_URL cho login
-import ThemeToggleButton from './ThemeToggleButton'; // Import the toggle button
+import ThemeToggleButton from './ThemeToggleButton';
+import MuteButton from './MuteButton'; // Import MuteButton
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, loading } = useAuth();
@@ -24,10 +25,11 @@ const Navbar = () => {
               Quiz Game
             </Link>
           </div>
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3"> {/* Reduced space slightly for more icons */}
+            <MuteButton />
             <ThemeToggleButton />
             {loading ? (
-              <span className="text-text-secondary dark:text-slate-400">Loading...</span>
+              <span className="text-text-secondary dark:text-slate-400 text-sm">Loading...</span>
             ) : isAuthenticated && user ? (
               <>
                 <span className="text-sm text-text-secondary dark:text-slate-300 hidden sm:inline">

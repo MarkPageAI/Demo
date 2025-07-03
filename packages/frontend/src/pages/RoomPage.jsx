@@ -11,13 +11,15 @@ import PlayerStatus from '../components/PlayerStatus';
 import TimerCircle from '../components/TimerCircle';
 import QuestionCard from '../components/QuestionCard';
 import AnswerOption from '../components/AnswerOption';
-import { motion, AnimatePresence } from 'framer-motion'; // Import Framer Motion
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAudio } from '../contexts/AudioContext'; // Import useAudio
 
 
 const RoomPage = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { playWaitingMusic, playGameplayMusic, stopAllMusic, currentTrack } = useAudio(); // Get audio functions
 
   const [roomDetails, setRoomDetails] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -209,26 +211,20 @@ const RoomPage = () => {
   // Effect for initial data load and WebSocket setup
   useEffect(() => {
     if (!roomId) {
-      navigate('/'); // Should not happen if routes are correct
+      navigate('/');
       return;
     }
 
-    fetchRoomDetails();
+    fetchRoomDetails(); // Also handles initial music based on room state after fetch
 
-    websocketService.connect(); // Connect WebSocket
+    websocketService.connect();
     websocketService.addMessageListener(handleWebSocketMessage);
 
-    // Subscribe to room events after connection is likely established
-    // A small delay or onopen callback in websocketService might be more robust
     const wsSubTimeout = setTimeout(() => {
         if (websocketService.getSocket() && websocketService.getSocket().readyState === WebSocket.OPEN && user) {
             websocketService.sendMessage({
               action: 'subscribe_room',
-              payload: {
-                roomId: roomId,
-                discordUserId: user.id,
-                username: user.username
-              }
+              payload: { roomId: roomId, discordUserId: user.id, username: user.username }
             });
         } else {
             console.warn("WebSocket not open or user not available when attempting to subscribe.");
@@ -237,12 +233,38 @@ const RoomPage = () => {
 
     return () => {
       websocketService.removeMessageListener(handleWebSocketMessage);
-      // Consider whether to disconnect globally or manage subscriptions more granularly
-      // For instance, if user navigates between rooms without full page reload.
-      // websocketService.disconnect();
+      stopAllMusic(); // Stop music when leaving the room/unmounting
+      // websocketService.disconnect(); // Consider global vs. local connection management
       clearTimeout(wsSubTimeout);
     };
-  }, [roomId, fetchRoomDetails, handleWebSocketMessage, navigate, user]); // Added user to dependencies
+  }, [roomId, fetchRoomDetails, handleWebSocketMessage, navigate, user, stopAllMusic]);
+
+
+  // Effect for managing music based on game state
+  useEffect(() => {
+    if (!roomDetails) return;
+
+    if (roomDetails.status === 'waiting' && roomDetails.roomState === 'waiting' && !isCelebratingCorrectAnswer) {
+      if (currentTrack !== 'waiting') playWaitingMusic();
+    } else if (roomDetails.status === 'playing' && roomDetails.roomState === 'question_displayed' && !isCelebratingCorrectAnswer) {
+      if (currentTrack !== 'gameplay') playGameplayMusic();
+    } else if (roomDetails.status === 'finished' || isCelebratingCorrectAnswer) {
+      // Stop music during celebration or if quiz finished and no new track is immediately starting
+      // If celebration ends and new question appears, the above conditions will restart gameplay music.
+      if (isCelebratingCorrectAnswer && currentTrack === 'gameplay') {
+        // If gameplay music was playing, pause it for celebration, it will resume or change with next question.
+        // Or, let it play through if desired. For now, let's ensure no overlap if we had distinct celebration sounds.
+        // Since we don't have distinct celebration sound, gameplay music might be okay to continue.
+        // For now, let's be explicit: if we are celebrating, ensure no game music unless intended.
+        // This example pauses gameplay music during celebration.
+        // stopAllMusic(); // Or just gameplayAudioRef.current.pause() if you want to resume it.
+      } else if (roomDetails.status === 'finished') {
+        stopAllMusic();
+      }
+    }
+    // This effect should also handle cleanup if the component unmounts while music is playing
+    // The main unmount cleanup for stopAllMusic is in the WebSocket useEffect.
+  }, [roomDetails?.status, roomDetails?.roomState, isCelebratingCorrectAnswer, playWaitingMusic, playGameplayMusic, stopAllMusic, currentTrack]);
 
 
   const handleStartQuiz = async () => {
