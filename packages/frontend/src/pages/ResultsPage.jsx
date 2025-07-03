@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 // import PlayerList from '../components/PlayerList'; // Replaced
 import PlayerStatus from '../components/PlayerStatus'; // Use new component
+import TopicProgressBar from '../components/TopicProgressBar';
+import TopicPerformanceChart from '../components/TopicPerformanceChart'; // Import chart component
 import apiService from '../services/api'; // Potentially to fetch room details if not in location state
 import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+import { motion } from 'framer-motion'; // Import motion
 
 const ResultsPage = () => {
   const { roomId } = useParams();
@@ -91,10 +94,24 @@ const ResultsPage = () => {
           <h3 className="text-2xl font-semibold text-learning-yellow mb-6">🏆 Top Players 🏆</h3>
           <div className="grid md:grid-cols-3 gap-4 justify-items-center">
             {topPlayers.map((player, index) => (
-              <div key={player.id || player.discordUserId}
-                   className={`p-4 rounded-lg shadow-xl border-2 w-full max-w-sm ${medalColors[index] || 'bg-steam-gray-light border-steam-gray'}`}>
+              <motion.div
+                key={player.id || player.discordUserId}
+                className={`p-4 rounded-lg shadow-xl border-2 w-full max-w-sm ${medalColors[index] || 'bg-steam-gray-light border-steam-gray'}`}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.2, duration: 0.5 }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: `0px 0px 15px 5px ${index === 0 ? 'rgba(251, 191, 36, 0.7)' : index === 1 ? 'rgba(192, 192, 192, 0.7)' : 'rgba(205, 127, 50, 0.7)'}` // Gold, Silver, Bronze glow
+                }}
+              >
                 <div className="text-center">
-                  <span className="text-4xl">
+                  <motion.span
+                    className="text-5xl"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: index * 0.2 + 0.3, type: "spring", stiffness: 150 }}
+                  >
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                   </span>
                   <h4 className="text-xl font-bold text-steam-gray-dark mt-2">{index + 1}. {player.username}</h4>
@@ -102,6 +119,24 @@ const ResultsPage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Placeholder for Topic Progress - visible only if currentUser has topicPerformance data */}
+      {currentUser && finalRoomDetails.players.find(p => p.id === currentUser.id)?.topicPerformance && (
+        <div className="my-12 p-6 bg-white shadow-lg rounded-lg max-w-lg mx-auto">
+          <h3 className="text-2xl font-semibold text-creative-purple mb-6 text-center">Your Topic Performance</h3>
+          {finalRoomDetails.players.find(p => p.id === currentUser.id).topicPerformance.map(topic => (
+            <TopicProgressBar
+              key={topic.name}
+              topicName={topic.name}
+              progress={topic.progress}
+              color={topic.color || 'bg-tech-blue'} // Allow custom color per topic if provided
+            />
+          ))}
+          <div className="mt-6">
+            <TopicPerformanceChart data={finalRoomDetails.players.find(p => p.id === currentUser.id).topicPerformance} />
           </div>
         </div>
       )}
@@ -116,6 +151,7 @@ const ResultsPage = () => {
                 playerName={player.username}
                 score={player.score}
                 isCurrentPlayer={currentUser && player.id === currentUser.id}
+                averageTime={player.averageTime} // Pass directly, PlayerStatus handles null
               />
             ))}
           </div>
@@ -133,6 +169,7 @@ const ResultsPage = () => {
                 playerName={player.username}
                 score={player.score}
                 isCurrentPlayer={currentUser && player.id === currentUser.id}
+                averageTime={player.averageTime} // Also pass averageTime here
               />
             ))}
           </div>
