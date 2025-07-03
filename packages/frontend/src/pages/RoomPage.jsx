@@ -113,6 +113,8 @@ const RoomPage = () => {
         console.log("Room details updated via WebSocket:", message.payload);
         break;
       case 'new_question':
+        console.log("[RoomPage] handleWebSocketMessage: Received 'new_question' event. Payload:", JSON.stringify(message.payload, null, 2));
+        setIsLoading(false); // Stop loading indicator shown by handleStartQuiz
         setRoomDetails(prevDetails => ({
             ...prevDetails,
             status: 'playing',
@@ -199,12 +201,21 @@ const RoomPage = () => {
       return;
     }
     try {
-      setActionMessage('Starting quiz...');
+      setActionMessage('Attempting to start quiz...');
+      console.log(`[RoomPage] handleStartQuiz: Attempting to start quiz for room ${roomId}`);
+      // Optimistically update UI to show quiz is starting
+      setRoomDetails(prev => ({ ...prev, status: 'playing', roomState: 'starting' }));
+      setIsLoading(true); // Show a general loading indicator for this async action
+
       await apiService.startQuiz(roomId);
-      // Server will broadcast 'new_question', no need to set state here directly for that
-      setActionMessage('Quiz start signal sent!');
+
+      console.log(`[RoomPage] handleStartQuiz: startQuiz API call successful for room ${roomId}. Waiting for new_question event.`);
+      setActionMessage('Quiz start signal sent! Waiting for the first question...');
+      // setIsLoading(false); // Keep loading until new_question arrives or timeout
     } catch (err) {
-      console.error("Failed to start quiz:", err);
+      console.error("[RoomPage] handleStartQuiz: Failed to start quiz API call:", err);
+      setRoomDetails(prev => ({ ...prev, status: 'waiting', roomState: 'waiting' })); // Revert optimistic update
+      setIsLoading(false);
       setError(err.message || 'Failed to start quiz.');
       setActionMessage(`Error starting quiz: ${err.message}`);
     }
@@ -266,8 +277,16 @@ const RoomPage = () => {
   }
 
   const isHost = isAuthenticated && user && roomDetails.hostId === user.id;
-  const showQuizArea = roomDetails.status === 'playing' && currentQuestion;
-  const showAnswerReveal = roomDetails.roomState === 'answer_revealed' && currentQuestion && currentQuestion.correctChoiceId;
+  const showQuizArea = roomDetails.status === 'playing' && currentQuestion && roomDetails.roomState === 'question_displayed';
+  const showAnswerRevealDisplay = roomDetails.roomState === 'answer_revealed' && currentQuestion && currentQuestion.correctChoiceId;
+
+  // Logging before render
+  console.log(`[RoomPage] Rendering:
+    isLoading: ${isLoading}, authLoading: ${authLoading}, error: ${error},
+    roomDetails.status: ${roomDetails?.status}, roomDetails.roomState: ${roomDetails?.roomState},
+    currentQuestion ID: ${currentQuestion?.id}, currentQuestion text: ${currentQuestion?.text?.substring(0,20)},
+    questionMeta number: ${questionMeta?.number},
+    showQuizArea: ${showQuizArea}, showAnswerRevealDisplay: ${showAnswerRevealDisplay}`);
 
   return (
     <div className="container mx-auto p-4">
@@ -320,7 +339,7 @@ const RoomPage = () => {
                 initial={{ opacity: 0, x: 300 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -300 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
+                transition={{ duration: 1.5, ease: "easeInOut" }} // Increased duration from 0.5 to 1.5 seconds
                 className="bg-white p-6 rounded-lg shadow-xl"
               >
                 <div className="flex justify-between items-center mb-6">
@@ -339,9 +358,9 @@ const RoomPage = () => {
                       option={choice}
                       onSelect={() => handleSubmitAnswer(choice.id)}
                       isSelected={selectedAnswerId === choice.id}
-                      isCorrect={showAnswerReveal && choice.id === currentQuestion.correctChoiceId}
-                      revealAnswer={showAnswerReveal}
-                      disabled={selectedAnswerId !== null || showAnswerReveal || timeLeft === 0} // Also disable if time is up
+                      isCorrect={roomDetails.roomState === 'answer_revealed' && choice.id === currentQuestion.correctChoiceId}
+                      revealAnswer={roomDetails.roomState === 'answer_revealed'}
+                      disabled={selectedAnswerId !== null || roomDetails.roomState === 'answer_revealed' || timeLeft === 0}
                     />
                   ))}
                 </div>
@@ -349,7 +368,7 @@ const RoomPage = () => {
             )}
           </AnimatePresence>
 
-          {showAnswerReveal && !showQuizArea && ( // Only show this separate reveal message if not showing a new question yet
+          {showAnswerRevealDisplay && !showQuizArea && ( // Only show this separate reveal message if not showing a new question yet
             <div className="mt-6 p-6 bg-steam-gray-light rounded-lg shadow">
               <h4 className="text-2xl font-bold text-center text-creative-purple mb-3">Answer Revealed!</h4>
               <p className="text-lg text-center text-steam-gray-dark">

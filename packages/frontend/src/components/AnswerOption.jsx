@@ -37,26 +37,36 @@ const AnswerOption = ({ option, onSelect, isSelected, isCorrect, revealAnswer, d
       transition: { duration: 0.4 }
     },
     correct: {
-      scale: [1, 1.05, 1],
-      transition: { duration: 0.5 }
+      scale: [1, 1.08, 1.03, 1.08, 1], // More pronounced pulse
+      // Adding a green box-shadow glow effect for correct answers
+      boxShadow: [
+        "0 0 0px rgba(52, 211, 153, 0)", // from-green-400 via #34D399
+        "0 0 25px rgba(52, 211, 153, 0.8)",
+        "0 0 5px rgba(52, 211, 153, 0.3)",
+        "0 0 25px rgba(52, 211, 153, 0.8)",
+        "0 0 0px rgba(52, 211, 153, 0)"
+      ],
+      transition: { duration: 0.9, ease: "easeInOut" }
     }
   };
 
-  // Determine animation state
-  let animationState = "animate";
+  // Determine animation target state based on props
+  let animateTarget = "animate"; // Default target state key from variants
   if (revealAnswer) {
-    if (isSelected && !isCorrect) {
-      animationState = "shake";
-    } else if (isCorrect) {
-      animationState = "correct";
+    if (isCorrect) {
+      animateTarget = "correct";
+    } else if (isSelected && !isCorrect) {
+      animateTarget = "shake";
     }
+    // If revealAnswer is true but it's not the selected incorrect one, nor the correct one,
+    // it will just stay in its "animate" state (which is opacity 1, y 0), but its bg/text color changes.
   }
 
   return (
     <motion.button
       variants={optionVariants}
-      initial="initial"
-      animate={animationState} // Use "animate" for initial render, then "shake" or "correct"
+      initial="initial" // Animation on first mount
+      animate={animateTarget} // Target state for animation changes
       exit="exit"
       whileHover={{ scale: disabled || revealAnswer ? 1 : 1.03 }}
       whileTap={{ scale: disabled || revealAnswer ? 1 : 0.97 }}
