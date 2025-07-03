@@ -4,12 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
 import GlobalLeaderboard from '../components/GlobalLeaderboard';
 
-// Import new components for demonstration
-import QuestionCard from '../components/QuestionCard';
-import AnswerOption from '../components/AnswerOption';
-import TimerCircle from '../components/TimerCircle';
-import PlayerStatus from '../components/PlayerStatus';
-
 const HomePage = () => {
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -124,55 +118,6 @@ const HomePage = () => {
         loading={leaderboardLoading}
         error={leaderboardError}
       />
-
-      {/* Placeholder for New Component Showcase */}
-      <div className="mt-12 p-6 border-t-2 border-creative-purple">
-        <h2 className="text-3xl font-bold text-center mb-8 text-creative-purple">Component Showcase</h2>
-
-        <div className="grid md:grid-cols-2 gap-8 items-start">
-
-          <div>
-            <h3 className="text-xl font-semibold mb-4 text-tech-blue">Timer & Player Status</h3>
-            <div className="flex flex-col items-center space-y-6 mb-8 p-4 bg-steam-gray-light rounded-lg shadow">
-              <TimerCircle timeLeft={45} totalTime={60} size={120} />
-              <PlayerStatus playerName="Jules" score={1200} isCurrentPlayer={true} />
-              <PlayerStatus playerName="Opponent" score={950} />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold mb-4 text-tech-blue">Question & Answers</h3>
-            <QuestionCard question={{ text: "What is the powerhouse of the cell?" }} />
-            <div className="mt-4 space-y-3">
-              <AnswerOption
-                option={{ id: '1', text: 'Mitochondria' }}
-                onSelect={() => console.log('Selected Mitochondria')}
-                isSelected={false}
-              />
-              <AnswerOption
-                option={{ id: '2', text: 'Nucleus' }}
-                onSelect={() => console.log('Selected Nucleus')}
-                isSelected={true} // Example of a selected state
-              />
-              <AnswerOption
-                option={{ id: '3', text: 'Ribosome' }}
-                onSelect={() => console.log('Selected Ribosome')}
-                isSelected={false}
-                isCorrect={true} // Example to show correct answer styling if revealAnswer was true
-                revealAnswer={false} // Set to true to see "correct" styling
-              />
-               <AnswerOption
-                option={{ id: '4', text: 'Endoplasmic Reticulum' }}
-                onSelect={() => console.log('Selected ER')}
-                isSelected={false}
-                isCorrect={false}
-                revealAnswer={false} // Set to true to see "incorrect" styling if this was also selected
-              />
-            </div>
-          </div>
-
-        </div>
-      </div>
     </div>
   );
 };
