@@ -48,8 +48,18 @@ html.dark {
   /* Primary, Secondary, Accent might need dark theme variants if the originals don't have enough contrast */
   /* For now, keeping them same, but they can be overridden here: */
   /* --color-primary: #some-dark-theme-primary; */
+  --gradient-bg-start: var(--color-secondary); /* creative-purple */
+  --gradient-bg-mid: #2d3748; /* slate-700, a bit darker than surface */
+  --gradient-bg-end: var(--color-primary); /* tech-blue */
 
   color-scheme: dark;
+}
+
+:root {
+  /* ... other root variables ... */
+  --gradient-bg-start: var(--color-primary); /* tech-blue */
+  --gradient-bg-mid: #e0e7ff; /* indigo-100 like, very light blue/purple */
+  --gradient-bg-end: var(--color-secondary); /* creative-purple */
 }
 
 
@@ -109,3 +119,22 @@ button:focus-visible {
   line-height: 1.1;
   color: var(--color-text-primary);
 } */
+
+/* Animated Gradient Background */
+@keyframes flowGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.quiz-active-background {
+  background: linear-gradient(-45deg, var(--gradient-bg-start), var(--gradient-bg-mid), var(--gradient-bg-end));
+  background-size: 200% 200%; /* Made it 200% instead of 400% for potentially faster visual change with same duration */
+  animation: flowGradient 20s ease infinite; /* 20s duration, ease timing, infinite loop */
+}
+
+/* Ensure content on top of this is legible - components should have their own backgrounds */
+.quiz-active-background > div { /* Assuming direct children are main layout blocks */
+  /* This is a bit of a general selector, might need to be more specific
+     or ensure all child components define their own backgrounds (e.g. bg-surface) */
+}

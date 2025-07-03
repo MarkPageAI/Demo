@@ -377,10 +377,13 @@ const RoomPage = () => {
     roomDetails.status: ${roomDetails?.status}, roomDetails.roomState: ${roomDetails?.roomState},
     currentQuestion ID: ${currentQuestion?.id}, currentQuestion text: ${currentQuestion?.text?.substring(0,20)},
     questionMeta number: ${questionMeta?.number},
-    showQuizArea: ${showQuizArea}, showAnswerRevealDisplay: ${showAnswerRevealDisplay}`);
+    showQuizArea: ${showQuizArea}, showAnswerRevealDisplay: ${showAnswerRevealDisplay},
+    isCelebrating: ${isCelebratingCorrectAnswer}`);
+
+  const showAnimatedBg = showQuizArea && !isCelebratingCorrectAnswer;
 
   return (
-    <div className="container mx-auto p-4 min-h-screen"> {/* Ensure page takes full height and respects body bg */}
+    <div className={`container mx-auto p-4 min-h-screen ${showAnimatedBg ? 'quiz-active-background' : ''}`}>
       <div className="mb-6 p-4 bg-surface dark:bg-slate-800 shadow-md rounded-lg border border-border dark:border-slate-700">
         <h2 className="text-3xl font-bold text-tech-blue dark:text-blue-400">Room: {roomDetails.name}
           <span className="text-sm text-text-muted dark:text-slate-400 ml-2">(ID: {roomId})</span>
