@@ -11,6 +11,7 @@ import PlayerStatus from '../components/PlayerStatus';
 import TimerCircle from '../components/TimerCircle';
 import QuestionCard from '../components/QuestionCard';
 import AnswerOption from '../components/AnswerOption';
+import { motion, AnimatePresence } from 'framer-motion'; // Import Framer Motion
 
 
 const RoomPage = () => {
@@ -312,36 +313,43 @@ const RoomPage = () => {
             </div>
           )}
 
-          {showQuizArea && (
-            <div className="bg-white p-6 rounded-lg shadow-xl">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold text-tech-blue">
-                  Question {questionMeta.number} of {questionMeta.total}
-                </h3>
-                <TimerCircle timeLeft={timeLeft} totalTime={totalTimeForQuestion} size={80} />
-              </div>
+          <AnimatePresence mode="wait">
+            {showQuizArea && (
+              <motion.div
+                key={currentQuestion.id} // Important for AnimatePresence to detect changes
+                initial={{ opacity: 0, x: 300 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -300 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="bg-white p-6 rounded-lg shadow-xl"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-semibold text-tech-blue">
+                    Question {questionMeta.number} of {questionMeta.total}
+                  </h3>
+                  <TimerCircle timeLeft={timeLeft} totalTime={totalTimeForQuestion} size={80} />
+                </div>
 
-              <QuestionCard question={currentQuestion} />
+                <QuestionCard question={currentQuestion} />
 
-              <div className="mt-6 space-y-3">
-                {currentQuestion.choices.map(choice => (
-                  <AnswerOption
-                    key={choice.id}
-                    option={choice}
-                    onSelect={() => handleSubmitAnswer(choice.id)}
-                    isSelected={selectedAnswerId === choice.id}
-                    // Reveal logic for after answer_reveal event
-                    isCorrect={showAnswerReveal && choice.id === currentQuestion.correctChoiceId}
-                    revealAnswer={showAnswerReveal}
-                    // Disable if an answer is already selected OR if answer is revealed
-                    disabled={selectedAnswerId !== null || showAnswerReveal}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+                <div className="mt-6 space-y-3">
+                  {currentQuestion.choices.map(choice => (
+                    <AnswerOption
+                      key={choice.id} // Keep this key for React's list rendering
+                      option={choice}
+                      onSelect={() => handleSubmitAnswer(choice.id)}
+                      isSelected={selectedAnswerId === choice.id}
+                      isCorrect={showAnswerReveal && choice.id === currentQuestion.correctChoiceId}
+                      revealAnswer={showAnswerReveal}
+                      disabled={selectedAnswerId !== null || showAnswerReveal || timeLeft === 0} // Also disable if time is up
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {showAnswerReveal && (
+          {showAnswerReveal && !showQuizArea && ( // Only show this separate reveal message if not showing a new question yet
             <div className="mt-6 p-6 bg-steam-gray-light rounded-lg shadow">
               <h4 className="text-2xl font-bold text-center text-creative-purple mb-3">Answer Revealed!</h4>
               <p className="text-lg text-center text-steam-gray-dark">
