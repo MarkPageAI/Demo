@@ -47,7 +47,7 @@ const GlobalLeaderboard = ({ leaderboardData, loading, error }) => {
         <ul className="space-y-3">
           {leaderboardData.map((player, index) => (
             <li
-              key={player.discordUserId || player.id}
+              key={player.discordUserId} // Use discordUserId as key
               className={`p-4 rounded-md shadow flex items-center justify-between transition-all duration-200 ease-in-out hover:shadow-xl
                           ${index === 0 ? 'bg-yellow-300 border-2 border-yellow-500' :
                             index === 1 ? 'bg-gray-200 border-2 border-gray-400' :
@@ -63,7 +63,7 @@ const GlobalLeaderboard = ({ leaderboardData, loading, error }) => {
                   {index + 1}
                 </span>
                 <AvatarDisplay
-                  userId={player.discordUserId || player.id}
+                  userId={player.discordUserId}
                   avatarHash={player.avatar}
                   name={player.username}
                 />

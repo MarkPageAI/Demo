@@ -107,7 +107,7 @@ const ResultsPage = () => {
           <div className="grid md:grid-cols-3 gap-4 justify-items-center">
             {topPlayers.map((player, index) => (
               <motion.div
-                key={player.id || player.discordUserId}
+                key={player.discordUserId} // Use discordUserId as key
                 className={`p-4 rounded-lg shadow-xl border-2 w-full max-w-sm ${medalColors[index] || 'bg-steam-gray-light border-steam-gray'}`}
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -117,7 +117,7 @@ const ResultsPage = () => {
                   boxShadow: `0px 0px 15px 5px ${index === 0 ? 'rgba(251, 191, 36, 0.7)' : index === 1 ? 'rgba(192, 192, 192, 0.7)' : 'rgba(205, 127, 50, 0.7)'}` // Gold, Silver, Bronze glow
                 }}
               >
-                <PodiumAvatar userId={player.id} avatarHash={player.avatar} name={player.username} />
+                <PodiumAvatar userId={player.discordUserId} avatarHash={player.avatar} name={player.username} />
                 <div className="text-center">
                   <motion.span
                     className="text-5xl block -mt-8" // Adjusted margin for medal overlap
@@ -137,10 +137,10 @@ const ResultsPage = () => {
       )}
 
       {/* Placeholder for Topic Progress - visible only if currentUser has topicPerformance data */}
-      {currentUser && finalRoomDetails.players.find(p => p.id === currentUser.id)?.topicPerformance && (
+      {currentUser && finalRoomDetails.players.find(p => p.discordUserId === currentUser.id)?.topicPerformance && (
         <div className="my-12 p-6 bg-white shadow-lg rounded-lg max-w-lg mx-auto">
           <h3 className="text-2xl font-semibold text-creative-purple mb-6 text-center">Your Topic Performance</h3>
-          {finalRoomDetails.players.find(p => p.id === currentUser.id).topicPerformance.map(topic => (
+          {finalRoomDetails.players.find(p => p.discordUserId === currentUser.id).topicPerformance.map(topic => (
             <TopicProgressBar
               key={topic.name}
               topicName={topic.name}
@@ -149,7 +149,7 @@ const ResultsPage = () => {
             />
           ))}
           <div className="mt-6">
-            <TopicPerformanceChart data={finalRoomDetails.players.find(p => p.id === currentUser.id).topicPerformance} />
+            <TopicPerformanceChart data={finalRoomDetails.players.find(p => p.discordUserId === currentUser.id).topicPerformance} />
           </div>
         </div>
       )}
@@ -160,12 +160,12 @@ const ResultsPage = () => {
           <div className="space-y-3 max-w-md mx-auto">
             {otherPlayers.map(player => (
               <PlayerStatus
-                key={player.id || player.discordUserId}
-                userId={player.id} // Pass userId
-                avatarHash={player.avatar} // Pass avatarHash
+                key={player.discordUserId}
+                userId={player.discordUserId}
+                avatarHash={player.avatar}
                 playerName={player.username}
                 score={player.score}
-                isCurrentPlayer={currentUser && player.id === currentUser.id}
+                isCurrentPlayer={currentUser && player.discordUserId === currentUser.id}
                 averageTime={player.averageTime} // Pass directly, PlayerStatus handles null
               />
             ))}
@@ -180,12 +180,12 @@ const ResultsPage = () => {
           <div className="space-y-3 max-w-md mx-auto">
             {sortedPlayers.map(player => (
               <PlayerStatus
-                key={player.id || player.discordUserId}
-                userId={player.id} // Pass userId
-                avatarHash={player.avatar} // Pass avatarHash
+                key={player.discordUserId}
+                userId={player.discordUserId}
+                avatarHash={player.avatar}
                 playerName={player.username}
                 score={player.score}
-                isCurrentPlayer={currentUser && player.id === currentUser.id}
+                isCurrentPlayer={currentUser && player.discordUserId === currentUser.id}
                 averageTime={player.averageTime} // Also pass averageTime here
               />
             ))}

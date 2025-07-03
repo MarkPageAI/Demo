@@ -397,19 +397,19 @@ const RoomPage = () => {
             {roomDetails.players && roomDetails.players.length > 0 ? (
               roomDetails.players.map(p => (
                 <motion.div
-                  key={p.id}
-                  layout // Enables automatic animation when items reorder or change.
+                  key={p.discordUserId} // Use discordUserId as key
+                  layout
                   initial={{ opacity: 0, x: -50 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 50 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
                   <PlayerStatus
-                    userId={p.id} // Pass userId
-                    avatarHash={p.avatar} // Pass avatarHash (assuming backend provides p.avatar)
-                    playerName={p.username || `Player ${p.id.substring(0,6)}`}
+                    userId={p.discordUserId}
+                    avatarHash={p.avatar}
+                    playerName={p.username || `Player ${p.discordUserId.substring(0,6)}`}
                     score={p.score}
-                    isCurrentPlayer={user && p.id === user.id}
+                    isCurrentPlayer={user && p.discordUserId === user.id}
                   />
                 </motion.div>
               ))
