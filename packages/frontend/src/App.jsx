@@ -13,7 +13,7 @@ function App() {
     <AuthProvider> {/* Wrap everything with AuthProvider */}
       <div className="App">
         <Navbar />
-        <main className="container bg-red-500">
+        <main className="container">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/room/:roomId" element={<RoomPage />} />
