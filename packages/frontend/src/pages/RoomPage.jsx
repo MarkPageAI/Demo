@@ -405,6 +405,8 @@ const RoomPage = () => {
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
                   <PlayerStatus
+                    userId={p.id} // Pass userId
+                    avatarHash={p.avatar} // Pass avatarHash (assuming backend provides p.avatar)
                     playerName={p.username || `Player ${p.id.substring(0,6)}`}
                     score={p.score}
                     isCurrentPlayer={user && p.id === user.id}

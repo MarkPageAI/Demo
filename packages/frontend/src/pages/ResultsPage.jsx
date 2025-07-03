@@ -148,6 +148,8 @@ const ResultsPage = () => {
             {otherPlayers.map(player => (
               <PlayerStatus
                 key={player.id || player.discordUserId}
+                userId={player.id} // Pass userId
+                avatarHash={player.avatar} // Pass avatarHash
                 playerName={player.username}
                 score={player.score}
                 isCurrentPlayer={currentUser && player.id === currentUser.id}
@@ -166,6 +168,8 @@ const ResultsPage = () => {
             {sortedPlayers.map(player => (
               <PlayerStatus
                 key={player.id || player.discordUserId}
+                userId={player.id} // Pass userId
+                avatarHash={player.avatar} // Pass avatarHash
                 playerName={player.username}
                 score={player.score}
                 isCurrentPlayer={currentUser && player.id === currentUser.id}

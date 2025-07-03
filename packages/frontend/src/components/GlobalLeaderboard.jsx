@@ -1,4 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react'; // Import useState for image error handling
+
+// Re-usable Avatar component (can be moved to a shared file if used elsewhere)
+const AvatarDisplay = ({ userId, avatarHash, name }) => {
+  const [imgError, setImgError] = useState(false);
+
+  if (avatarHash && userId && !imgError) {
+    const isAnimated = avatarHash.startsWith('a_');
+    const extension = isAnimated ? 'gif' : 'png';
+    const avatarUrl = `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${extension}?size=64`;
+
+    return (
+      <img
+        src={avatarUrl}
+        alt={`${name}'s avatar`}
+        className="w-10 h-10 rounded-full shadow-md shrink-0 object-cover"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  // Fallback to initials
+  return (
+    <div className="w-10 h-10 rounded-full bg-tech-blue flex items-center justify-center text-white font-semibold text-lg shrink-0">
+      {(name || 'P').charAt(0).toUpperCase()}
+    </div>
+  );
+};
+
 
 const GlobalLeaderboard = ({ leaderboardData, loading, error }) => {
   if (loading) {
@@ -35,10 +62,11 @@ const GlobalLeaderboard = ({ leaderboardData, loading, error }) => {
                                    'bg-creative-purple text-white'}`}>
                   {index + 1}
                 </span>
-                {/* Basic Avatar */}
-                <div className="w-10 h-10 rounded-full bg-tech-blue flex items-center justify-center text-white font-semibold text-lg shrink-0">
-                  {(player.username || 'P').charAt(0).toUpperCase()}
-                </div>
+                <AvatarDisplay
+                  userId={player.discordUserId || player.id}
+                  avatarHash={player.avatar}
+                  name={player.username}
+                />
                 <div>
                   <span className="font-semibold text-steam-gray-dark text-base sm:text-lg">
                     {player.username}{player.discriminator && player.discriminator !== "0" ? `#${player.discriminator}` : ''}
