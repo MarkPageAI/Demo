@@ -392,8 +392,9 @@ const RoomPage = () => {
         {actionMessage && <p className={`mt-2 text-sm ${actionMessage.startsWith('Error') ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{actionMessage}</p>}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Players Section */}
+      {/* Changed to md:grid-cols-4 to give more space to quiz area on medium+ screens */}
+      <div className="grid md:grid-cols-4 gap-6">
+        {/* Players Section - now takes 1/4 on md+ screens */}
         <div className="md:col-span-1 space-y-3">
           <h3 className="text-xl font-semibold text-tech-blue dark:text-blue-400 mb-2">Players ({roomDetails.players?.length || 0})</h3>
           <AnimatePresence>
@@ -422,8 +423,8 @@ const RoomPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Main Quiz Area / Waiting Area */}
-        <div className="md:col-span-2 relative"> {/* Added relative for potential absolute positioning of tips */}
+        {/* Main Quiz Area / Waiting Area - now takes 3/4 on md+ screens */}
+        <div className="md:col-span-3 relative">
           {roomDetails.status === 'waiting' && roomDetails.roomState === 'waiting' && (
             <div className="bg-surface dark:bg-slate-800 p-6 rounded-lg shadow-xl text-center border border-border dark:border-slate-700">
               {isHost ? (

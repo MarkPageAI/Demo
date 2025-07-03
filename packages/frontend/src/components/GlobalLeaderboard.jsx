@@ -48,14 +48,15 @@ const GlobalLeaderboard = ({ leaderboardData, loading, error }) => {
           {leaderboardData.map((player, index) => (
             <li
               key={player.discordUserId}
-              className={`p-3 sm:p-4 rounded-md shadow flex items-center justify-between transition-all duration-200 ease-in-out hover:shadow-xl border
+              className={`p-3 rounded-md shadow flex flex-col sm:flex-row sm:items-center sm:justify-between transition-all duration-200 ease-in-out hover:shadow-xl border
                           ${index === 0 ? 'bg-yellow-300/70 dark:bg-yellow-500/50 border-yellow-500 dark:border-yellow-400' :
                             index === 1 ? 'bg-gray-300/70 dark:bg-gray-500/50 border-gray-400 dark:border-gray-500' :
-                            index === 2 ? 'bg-yellow-600/50 dark:bg-yellow-700/40 border-yellow-700 dark:border-yellow-600' : // Bronze-like
+                            index === 2 ? 'bg-yellow-600/50 dark:bg-yellow-700/40 border-yellow-700 dark:border-yellow-600' :
                             'bg-white dark:bg-slate-700 border-border dark:border-slate-600 hover:bg-tech-blue/5 dark:hover:bg-tech-blue/10'}`}
             >
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <span className={`text-sm sm:text-lg font-bold w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full shrink-0
+              {/* Left part: Rank, Avatar, Name, Avg Time */}
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-0 flex-grow min-w-0"> {/* Added min-w-0 for truncation */}
+                <span className={`text-xs sm:text-sm font-bold w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full shrink-0
                                  ${index === 0 ? 'bg-yellow-500 text-white' :
                                    index === 1 ? 'bg-gray-500 text-white' :
                                    index === 2 ? 'bg-yellow-700 text-white' :
@@ -67,10 +68,10 @@ const GlobalLeaderboard = ({ leaderboardData, loading, error }) => {
                   avatarHash={player.avatar}
                   name={player.username}
                 />
-                <div className="flex-grow">
-                  <span className={`font-semibold text-text-primary dark:text-slate-100 text-sm sm:text-base truncate max-w-[100px] sm:max-w-[150px] md:max-w-xs`} title={player.username}>
+                <div className="flex-grow min-w-0"> {/* Added min-w-0 for truncation */}
+                  <p className={`font-semibold text-text-primary dark:text-slate-100 text-sm sm:text-base truncate`} title={player.username}>
                     {player.username}{player.discriminator && player.discriminator !== "0" && player.discriminator !== "0000" ? `#${player.discriminator}` : ''}
-                  </span>
+                  </p>
                   {player.averageTimePerQuestion !== undefined && (
                      <span className="block text-xs text-creative-purple/80 dark:text-purple-400/80">
                        Avg Time: {player.averageTimePerQuestion.toFixed(2)}s
@@ -78,9 +79,10 @@ const GlobalLeaderboard = ({ leaderboardData, loading, error }) => {
                   )}
                 </div>
               </div>
-              <div className="text-right shrink-0">
-                <span className="block text-base sm:text-lg font-bold text-tech-blue dark:text-blue-400">{player.totalScore} pts</span>
-                <span className="text-xs text-text-muted dark:text-slate-400">Games: {player.gamesPlayed}</span>
+              {/* Right part: Score, Games Played */}
+              <div className="text-xs sm:text-sm text-right shrink-0 sm:ml-2">
+                <span className="block font-bold text-tech-blue dark:text-blue-400 text-sm sm:text-base">{player.totalScore} pts</span>
+                <span className="text-text-muted dark:text-slate-400">Games: {player.gamesPlayed}</span>
               </div>
             </li>
           ))}
